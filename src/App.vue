@@ -6,7 +6,7 @@
         <span class="font-weight-light hidden-xs-only">Webinterface</span>
       </v-toolbar-title>
       <v-spacer></v-spacer>
-      <v-btn flat>
+      <v-btn flat v-if="loggedIn()" @click="logout()">
         <span class="mr-2">Logout</span>
       </v-btn>
     </v-toolbar>
@@ -15,28 +15,21 @@
         <router-view></router-view>
       </transition>
     </v-content>
-
-
-    <!-- <v-content>
-      <Dashboard />
-      <BottomNavigation />
-    </v-content> -->
   </v-app>
 </template>
 
 <script>
-  // import Dashboard from './components/Dashboard';
-  // import BottomNavigation from './components/BottomNavigation';
+  import Storage from './utils/storage';
 
   export default {
     name: 'App',
-    components: {
-      // BottomNavigation,
-      // Dashboard
-    },
-    data() {
-      return {
-        //
+    methods: {
+      loggedIn() {
+        return this.$router.currentRoute.name !== 'login';
+      },
+      logout() {
+        Storage.removeValue('user');
+        this.$router.push('/login');
       }
     }
   }

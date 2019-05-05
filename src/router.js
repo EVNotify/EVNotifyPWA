@@ -12,6 +12,11 @@ export default new Router({
       component: Dashboard
     },
     {
+      path: '/login',
+      name: 'login',
+      component: () => import(/* webpackChunkName: "login" */ './views/Login.vue')
+    },
+    {
       path: '/logs',
       name: 'logs',
       component: () => import(/* webpackChunkName: "logs" */ './views/Logs.vue')
