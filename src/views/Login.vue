@@ -1,16 +1,22 @@
 <template>
-  <v-layout>
-    <Login />
-  </v-layout>
-
+  <div>
+    <v-layout>
+      <Login />
+    </v-layout>
+    <v-layout>
+      <Footer />
+    </v-layout>
+  </div>
 </template>
 
 <script>
   import Login from '../components/Login';
+  import Footer from '../components/Footer';
 
   export default {
     components: {
-      Login
+      Login,
+      Footer
     }
   }
 </script>

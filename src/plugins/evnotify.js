@@ -26,7 +26,7 @@ var sendRequest = function (type, fnc, data, callback) {
                     retData = this.responseText
                 }
 
-                callback(((this.status !== 200) ? this.status : null), {
+                callback(((this.status !== 200) ? ((retData && retData.error && retData.error.code) ? retData.error.code : this.status) : null), {
                     status: this.status,
                     data: retData
                 });
