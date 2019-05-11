@@ -41,14 +41,14 @@
         }),
         methods: {
             login() {
-                var self = this;
+                const self = this;
 
                 self.akeyError = self.passwordError = self.unknownError = '';
-                self.$root.evnotify.login(self.akey, self.password, function (err, token) {
+                self.$root.evnotify.login(self.akey, self.password, (err, token) => {
                     if (!err && token) {
                         storage.setValue('user', {
                             akey: self.akey,
-                            token: self.token
+                            token: token
                         });
                         self.$router.push('/');
                     } else {
