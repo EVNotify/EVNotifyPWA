@@ -45,6 +45,7 @@
               </v-list>
             </div>
           </div>
+          <v-alert type="warning" :value="dataOutdated()" transition="scale-transition">{{ dataOutdatedMessage }}</v-alert>
           <div class="bottom-part">
             <v-list two-line>
               <v-subheader>Battery temperature</v-subheader>
@@ -74,7 +75,7 @@
                   <v-icon color="teal">battery_std</v-icon>
                 </v-list-tile-action>
                 <v-list-tile-content>
-                  <v-list-tile-title>11 %</v-list-tile-title>
+                  <v-list-tile-title>{{ syncData.soc_bms }} %</v-list-tile-title>
                   <v-list-tile-sub-title>SOC BMS</v-list-tile-sub-title>
                 </v-list-tile-content>
               </v-list-tile>
@@ -83,7 +84,7 @@
                   <v-icon color="teal">favorite</v-icon>
                 </v-list-tile-action>
                 <v-list-tile-content>
-                  <v-list-tile-title>100 %</v-list-tile-title>
+                  <v-list-tile-title>{{ syncData.soh }} %</v-list-tile-title>
                   <v-list-tile-sub-title>State of Health (SOH)</v-list-tile-sub-title>
                 </v-list-tile-content>
               </v-list-tile>
@@ -92,7 +93,7 @@
                   <v-icon color="teal">flash_auto</v-icon>
                 </v-list-tile-action>
                 <v-list-tile-content>
-                  <v-list-tile-title>14.4 V</v-list-tile-title>
+                  <v-list-tile-title>{{ syncData.aux_battery_voltage }} V</v-list-tile-title>
                   <v-list-tile-sub-title>Aux Battery Voltage</v-list-tile-sub-title>
                 </v-list-tile-content>
               </v-list-tile>
@@ -102,7 +103,7 @@
                   <v-icon color="teal">battery_charging_full</v-icon>
                 </v-list-tile-action>
                 <v-list-tile-content>
-                  <v-list-tile-title>371.21 V</v-list-tile-title>
+                  <v-list-tile-title>{{ syncData.dc_battery_voltage }} V</v-list-tile-title>
                   <v-list-tile-sub-title>Battery voltage</v-list-tile-sub-title>
                 </v-list-tile-content>
               </v-list-tile>
@@ -111,7 +112,7 @@
                   <v-icon color="teal">power</v-icon>
                 </v-list-tile-action>
                 <v-list-tile-content>
-                  <v-list-tile-title>-124.80 A</v-list-tile-title>
+                  <v-list-tile-title>{{ syncData.dc_battery_current }} A</v-list-tile-title>
                   <v-list-tile-sub-title>Battery current</v-list-tile-sub-title>
                 </v-list-tile-content>
               </v-list-tile>
@@ -120,7 +121,7 @@
                   <v-icon color="teal">battery_unknown</v-icon>
                 </v-list-tile-action>
                 <v-list-tile-content>
-                  <v-list-tile-title>5109 kWh</v-list-tile-title>
+                  <v-list-tile-title>{{ syncData.cumulative_energy_charged }} kWh</v-list-tile-title>
                   <v-list-tile-sub-title>Cumulative energy charged</v-list-tile-sub-title>
                 </v-list-tile-content>
               </v-list-tile>
@@ -133,17 +134,24 @@
 </template>
 
 <script>
+  import storage from '../utils/storage';
+import { clearInterval } from 'timers';
+
   export default {
     data: () => ({
       syncData: {
-        soc_bms: 12,
-        soc_display: 11,
-        dc_battery_power: 46.33,
-        battery_min_temperature: 19,
-        battery_max_temperature: 21,
-        battery_inlet_temperature: 16,
-        charging: 1
-      }
+        soc_bms: 0,
+        soc_display: 0,
+        dc_battery_power: 0,
+        battery_min_temperature: 0,
+        battery_max_temperature: 0,
+        battery_inlet_temperature: 0,
+        charging: 0,
+        last_extended: 0,
+        last_soc: 0
+      },
+      fetchInterval: 0,
+      dataOutdatedMessage: ''
     }),
     computed: {
       cycleColor() {
@@ -155,7 +163,7 @@
         return 'green';
       },
       powerAmount() {
-        return Math.abs(this.syncData.dc_battery_power) || 0;
+        return (Math.abs(this.syncData.dc_battery_power) || 0).toFixed(2);
       },
       powerAmountColor() {
         if (this.syncData.charging) return 'green';
@@ -168,12 +176,38 @@
         else if (temperature < 30) return 'green';
         else if (temperature < 35) return 'orange';
         return 'red';
+      },
+      fetchData() {
+        const self = this;
+
+        ['getSOC', 'getExtended'].forEach((method) => {
+          self.$root.evnotify[method]((err, obj) => {
+            if (!err && obj) Object.keys(obj).forEach((key) => self.syncData[key] = obj[key]);
+          });
+        });
+      },
+      dataOutdated() {
+        const now = parseInt(new Date() / 1000);
+        const lastUpdate = this.syncData.last_extended > this.syncData.last_soc ? this.syncData.last_extended : this.syncData.last_soc;
+        this.dataOutdatedMessage = 'Data outdated.';
+        return !lastUpdate || lastUpdate + 600 < now;
       }
+    },
+    mounted() {
+      if (!storage.getValue('user')) return;
+      this.fetchInterval = setInterval(this.fetchData, 10000);
+      this.fetchData();
+    },
+    beforeDestroy() {
+      clearInterval(this.fetchInterval);
     }
   }
 </script>
 
 <style scoped>
+  .v-alert {
+    width: 100%;
+  }
   .layout {
     width: 100%;
   }
