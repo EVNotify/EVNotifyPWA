@@ -271,6 +271,29 @@ EVNotify.prototype.getSOC = function (callback) {
 };
 
 /**
+ * Function to get the extended data for the AKey
+ * @param  {Function} callback  callback function
+ * @return {Object}             returns this
+ */
+EVNotify.prototype.getExtended = function (callback) {
+    var self = this;
+
+    // check authentication
+    if (!self.akey || !self.token) {
+        if (typeof callback === 'function') callback(401, null); // missing previous login request
+    } else {
+        sendRequest('get', 'extended', {
+            akey: self.akey,
+            token: self.token
+        }, function (err, extendedObj) {
+            if (typeof callback === 'function') callback(err, ((!err && extendedObj && extendedObj.data) ? extendedObj.data : null));
+        });
+    }
+
+    return self;
+};
+
+/**
  * Function to send out all available / enabled notifications for the AKey
  * @param  {Function} callback  callback function
  * @return {Object}             returns this
@@ -294,8 +317,10 @@ EVNotify.prototype.sendNotification = function (abort, callback) {
     return self;
 };
 
-export default function EVNotify() {
+export default function EVNotify(akey, token) {
     // prevent wrong declaration
     if (!(this instanceof EVNotify) || this.__previouslyConstructedByEVNotify) throw new Error('EVNotify must be called as constructor. Missing new keyword?');
     this.__previouslyConstructedByEVNotify = true;
+    this.akey = akey;
+    this.token = token;
 }
