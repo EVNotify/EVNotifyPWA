@@ -50,7 +50,12 @@
                             akey: self.akey,
                             token: token
                         });
-                        self.$router.push('/');
+                        self.$root.EVNotify.getSettings((err, settings) => {
+                            if (!err && token) {
+                                storage.setValue('settings', settings);
+                                self.$router.push('/');
+                            } else self.unknownError = 'Unknown error';
+                        });
                     } else {
                         if (err === 1300) self.akeyError = 'Malformed AKey format';
                         else if (err === 1700) self.akeyError = 'Unknown user';

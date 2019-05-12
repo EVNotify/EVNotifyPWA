@@ -25,27 +25,28 @@
                     <v-list-tile-title :style="{color: powerAmountColor}">{{ powerAmount }} kW</v-list-tile-title>
                   </v-list-tile-content>
                 </v-list-tile>
-                <v-list-tile>
+                <v-list-tile v-if="isSupportedCar()">
                   <v-list-tile-action>
                     <v-icon color="teal">drive_eta</v-icon>
                   </v-list-tile-action>
                   <v-list-tile-content>
-                    <v-list-tile-title>33 / 259 km</v-list-tile-title>
-                    <span class="font-weight-light font-italic">10.8kWh / 100 km</span>
+                    <v-list-tile-title>{{ currentRange }} / {{ totalRange }} km</v-list-tile-title>
+                    <span class="font-weight-light font-italic">{{ settings.consumption || 0 }}kWh / 100 km</span>
                   </v-list-tile-content>
                 </v-list-tile>
-                <v-list-tile>
+                <v-list-tile v-if="syncData.charging && isSupportedCar()">
                   <v-list-tile-action>
                     <v-icon color="teal">schedule</v-icon>
                   </v-list-tile-action>
                   <v-list-tile-content>
-                    <v-list-tile-title>00:32 h</v-list-tile-title>
+                    <v-list-tile-title>{{ chargingTimeLeft}} h</v-list-tile-title>
                   </v-list-tile-content>
                 </v-list-tile>
               </v-list>
             </div>
           </div>
-          <v-alert type="warning" :value="dataOutdated()" transition="scale-transition">{{ dataOutdatedMessage }}</v-alert>
+          <v-alert type="warning" :value="dataOutdated()" transition="scale-transition">{{ dataOutdatedMessage }}
+          </v-alert>
           <div class="bottom-part">
             <v-list two-line>
               <v-subheader>Battery temperature</v-subheader>
@@ -135,7 +136,7 @@
 
 <script>
   import storage from '../utils/storage';
-import { clearInterval } from 'timers';
+  import cars from '../utils/cars';
 
   export default {
     data: () => ({
@@ -151,7 +152,8 @@ import { clearInterval } from 'timers';
         last_soc: 0
       },
       fetchInterval: 0,
-      dataOutdatedMessage: ''
+      dataOutdatedMessage: '',
+      settings: storage.getValue('settings', {})
     }),
     computed: {
       cycleColor() {
@@ -168,6 +170,27 @@ import { clearInterval } from 'timers';
       powerAmountColor() {
         if (this.syncData.charging) return 'green';
         return 'red';
+      },
+      chargingTimeLeft() {
+        const capacity = cars[this.settings.car].CAPACITY;
+        const soc = this.syncData.soc_display || this.syncData.soc_bms;
+        const amountToCharge = capacity - parseFloat(
+          capacity * ((soc === 100) ? 1 : '0.' + ((soc < 10) ? ('0' + parseInt(soc)) : parseInt(soc)))
+        ).toFixed(2) || 0;
+        const decimalTime = parseFloat(
+          amountToCharge / (Math.abs(this.syncData.dc_battery_power) || cars[this.settings.car].FAST_SPEED)
+        ).toFixed(2);
+        const duration = this.$root.MomentJS.duration(parseFloat(decimalTime)).asMilliseconds();
+        return this.$root.MomentJS().startOf('day').add(duration, 'minutes').format('m:ss');
+      },
+      currentRange() {
+        const soc = this.syncData.soc_display || this.syncData.soc_bms;
+
+        return parseInt(this.totalRange * ((soc === 100) ? 1 : '0.' + ((soc < 10) ? ('0' + parseInt(soc)) :
+          parseInt(soc)))) || 0;
+      },
+      totalRange() {
+        return parseInt((cars[this.settings.car].CAPACITY / this.settings.consumption) * 100) || 0;
       }
     },
     methods: {
@@ -188,9 +211,15 @@ import { clearInterval } from 'timers';
       },
       dataOutdated() {
         const now = parseInt(new Date() / 1000);
-        const lastUpdate = this.syncData.last_extended > this.syncData.last_soc ? this.syncData.last_extended : this.syncData.last_soc;
-        this.dataOutdatedMessage = `Data outdated. Updated ${this.$root.MomentJS(new Date(lastUpdate * 1000)).fromNow()}.`;
+        const lastUpdate = this.syncData.last_extended > this.syncData.last_soc ?
+          this.syncData.last_extended : this.syncData.last_soc;
+
+        this.dataOutdatedMessage =
+          `Data outdated. Updated ${this.$root.MomentJS(new Date(lastUpdate * 1000)).fromNow()}.`;
         return !lastUpdate || lastUpdate + 600 < now;
+      },
+      isSupportedCar() {
+        return cars[this.settings.car] != null;
       }
     },
     mounted() {
@@ -208,6 +237,7 @@ import { clearInterval } from 'timers';
   .v-alert {
     width: 100%;
   }
+
   .layout {
     width: 100%;
   }
