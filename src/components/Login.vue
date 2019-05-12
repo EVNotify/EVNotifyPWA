@@ -44,7 +44,7 @@
                 const self = this;
 
                 self.akeyError = self.passwordError = self.unknownError = '';
-                self.$root.evnotify.login(self.akey, self.password, (err, token) => {
+                self.$root.EVNotify.login(self.akey, self.password, (err, token) => {
                     if (!err && token) {
                         storage.setValue('user', {
                             akey: self.akey,

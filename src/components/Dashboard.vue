@@ -181,7 +181,7 @@ import { clearInterval } from 'timers';
         const self = this;
 
         ['getSOC', 'getExtended'].forEach((method) => {
-          self.$root.evnotify[method]((err, obj) => {
+          self.$root.EVNotify[method]((err, obj) => {
             if (!err && obj) Object.keys(obj).forEach((key) => self.syncData[key] = obj[key]);
           });
         });
@@ -189,7 +189,7 @@ import { clearInterval } from 'timers';
       dataOutdated() {
         const now = parseInt(new Date() / 1000);
         const lastUpdate = this.syncData.last_extended > this.syncData.last_soc ? this.syncData.last_extended : this.syncData.last_soc;
-        this.dataOutdatedMessage = 'Data outdated.';
+        this.dataOutdatedMessage = `Data outdated. Updated ${this.$root.MomentJS(new Date(lastUpdate * 1000)).fromNow()}.`;
         return !lastUpdate || lastUpdate + 600 < now;
       }
     },

@@ -1,4 +1,5 @@
 import Vue from 'vue';
+import MomentJS from 'moment';
 import './plugins/vuetify';
 import EVNotify from './plugins/evnotify';
 import App from './App.vue';
@@ -13,7 +14,8 @@ const user = storage.getValue('user', {});
 new Vue({
   router,
   data: () => ({
-    evnotify: new EVNotify(user.akey, user.token)
+    EVNotify: new EVNotify(user.akey, user.token),
+    MomentJS: MomentJS 
   }),
   render: h => h(App)
 }).$mount('#app');
