@@ -19,3 +19,6 @@ new Vue({
   }),
   render: h => h(App)
 }).$mount('#app');
+
+console.log('%cStop!', 'color: red; font-size: 60px; font-weight: bold;');
+console.log('%cIf someone told you to copy and paste some code here, do not trust them. This can be malicious code that steals your data!', 'color: orange; font-size: 30px; font-weight: bold;');

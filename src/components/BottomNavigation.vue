@@ -1,7 +1,7 @@
 <template>
     <v-layout>
-        <v-bottom-nav :active.sync="bottomNav" :value="true" fixed color="transparent">
-            <v-btn flat color="teal" value="Dashboard">
+        <v-bottom-nav :value="true" fixed color="transparent">
+            <v-btn flat color="teal" value="Dashboard" to="/">
                 <span>Dashboard</span>
                 <v-icon>dashboard</v-icon>
             </v-btn>
@@ -13,7 +13,7 @@
                 <span>Stations</span>
                 <v-icon>ev_station</v-icon>
             </v-btn>
-            <v-btn flat color="teal" value="Settings">
+            <v-btn flat color="teal" value="Settings" to="/settings">
                 <span>Settings</span>
                 <v-icon>settings</v-icon>
             </v-btn>
@@ -22,11 +22,7 @@
 </template>
 
 <script>
-    export default {
-        data: () => ({
-            bottomNav: 'Dashboard'
-        })
-    }
+    export default {}
 </script>
 
 <style>
