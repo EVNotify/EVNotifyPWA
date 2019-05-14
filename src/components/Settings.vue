@@ -1,5 +1,41 @@
 <template>
     <v-layout>
+        <v-dialog v-model="changePasswordDialog" persistent max-width="290">
+            <v-card>
+                <v-card-title class="headline">Reset token</v-card-title>
+                <v-card-text>
+                    You are about to change your current password.
+                    Please enter your current password and confirm the new password.
+                    Do you want to proceed?
+                    <v-container grid-list-md>
+                        <v-layout wrap>
+                            <v-flex xs12 sm6 md4>
+                                <v-flex xs12>
+                                    <v-text-field label="Current Password*" type="password" required v-model="password"></v-text-field>
+                                </v-flex>
+                            </v-flex>
+                            <v-flex xs12 sm6 md4>
+                                <v-flex xs12>
+                                    <v-text-field label="New Password*" type="password" required v-model="newPassword"></v-text-field>
+                                </v-flex>
+                            </v-flex>
+                            <v-flex xs12 sm6 md4>
+                                <v-flex xs12>
+                                    <v-text-field label="Retype password*" type="password" required
+                                        :error-messages="errorMessage" v-model="newPassword2"></v-text-field>
+                                </v-flex>
+                            </v-flex>
+                        </v-layout>
+                    </v-container>
+                </v-card-text>
+                <v-card-actions>
+                    <v-spacer></v-spacer>
+                    <v-btn color="teal" flat @click="changePasswordDialog = false; password = newPassword = newPassword2 = ''">No
+                    </v-btn>
+                    <v-btn color="warning" flat @click="changePassword()">Yes</v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
         <v-dialog v-model="resetTokenDialog" persistent max-width="290">
             <v-card>
                 <v-card-title class="headline">Reset token</v-card-title>
@@ -12,7 +48,8 @@
                         <v-layout wrap>
                             <v-flex xs12 sm6 md4>
                                 <v-flex xs12>
-                                    <v-text-field label="Password*" type="password" required :error-messages="errorMessage" v-model="password"></v-text-field>
+                                    <v-text-field label="Password*" type="password" required
+                                        :error-messages="errorMessage" v-model="password"></v-text-field>
                                 </v-flex>
                             </v-flex>
                         </v-layout>
@@ -91,7 +128,9 @@
             errorMessage: '',
             resetTokenDialog: false,
             changePasswordDialog: false,
-            password: ''
+            password: '',
+            newPassword: '',
+            newPassword2: ''
         }),
         methods: {
             callDynamicFunction(name) {
@@ -102,6 +141,30 @@
             },
             showChangePasswordDialog() {
                 this.changePasswordDialog = true;
+            },
+            changePassword() {
+                var self = this;
+
+                if (self.password.length < 6 || self.newPassword.length < 6 || self.newPassword2.length < 6) {
+                    return self.errorMessage = 'Password must be at least 6 characters.';
+                }
+                if (self.newPassword !== self.newPassword2) {
+                    return self.errorMessage = 'Passwords do not match.';
+                }
+
+                self.$root.EVNotify.changePW(self.password, self.newPassword, (err) => {
+                    console.log(err);
+                    self.password = self.newPassword = self.newPassword2 = '';
+                    self.changePasswordDialog = false;
+                    self.showSnackbar = true;
+                    if (!err) {
+                        self.snackbarType = 'success';
+                        self.snackbarMessage = 'Password changed';
+                    } else {
+                        self.snackbarType = 'error';
+                        self.snackbarMessage = 'Password could not be changed';
+                    }
+                });
             },
             resetToken() {
                 var self = this;
