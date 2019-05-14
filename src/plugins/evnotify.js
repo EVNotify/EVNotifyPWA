@@ -161,6 +161,7 @@ EVNotify.prototype.renewToken = function (password, callback) {
     } else {
         sendRequest('put', 'renewtoken', {
             akey: self.akey,
+            token: self.token,
             password: password
         }, function (err, res) {
             // attach new token
