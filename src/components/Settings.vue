@@ -11,12 +11,14 @@
                         <v-layout wrap>
                             <v-flex xs12 sm6 md4>
                                 <v-flex xs12>
-                                    <v-text-field label="Current Password*" type="password" required v-model="password"></v-text-field>
+                                    <v-text-field label="Current Password*" type="password" required v-model="password">
+                                    </v-text-field>
                                 </v-flex>
                             </v-flex>
                             <v-flex xs12 sm6 md4>
                                 <v-flex xs12>
-                                    <v-text-field label="New Password*" type="password" required v-model="newPassword"></v-text-field>
+                                    <v-text-field label="New Password*" type="password" required v-model="newPassword">
+                                    </v-text-field>
                                 </v-flex>
                             </v-flex>
                             <v-flex xs12 sm6 md4>
@@ -30,7 +32,8 @@
                 </v-card-text>
                 <v-card-actions>
                     <v-spacer></v-spacer>
-                    <v-btn color="teal" flat @click="changePasswordDialog = false; password = newPassword = newPassword2 = ''">No
+                    <v-btn color="teal" flat
+                        @click="changePasswordDialog = false; password = newPassword = newPassword2 = ''">No
                     </v-btn>
                     <v-btn color="warning" flat @click="changePassword()">Yes</v-btn>
                 </v-card-actions>
@@ -83,7 +86,12 @@
                                 @click:prepend="element.showPassword = !element.showPassword">
                             </v-text-field>
                             <v-btn v-else-if="element.type === 'button'" block large :color="element.color"
-                                @click="callDynamicFunction(element.action)">{{ element.title }}</v-btn>
+                                @click="callDynamicFunction(element.action)">{{ element.title }}
+                            </v-btn>
+                            <v-select v-else-if="element.type === 'select'" :items="element.values"
+                                :label="element.title" @change="element.value = $event">
+                            </v-select>
+                            <v-slider v-else-if="element.type === 'slider'" thumb-label="always" :min="element.min" persistent-hint :hint="element.hint" :label="element.title" :max="element.max" :step="element.step"></v-slider>
                         </v-list-tile-content>
                     </v-list-tile>
                 </v-list-group>
@@ -120,6 +128,47 @@
                     type: 'button',
                     color: 'warning',
                     action: 'showResetTokenDialog'
+                }]
+            }, {
+                title: 'Car',
+                icon: 'directions_car',
+                elements: [{
+                    value: '',
+                    title: 'Car selection',
+                    type: 'select',
+                    values: [{
+                        text: 'Hyundai IONIQ Electric',
+                        value: 'IONIQ_BEV'
+                    }, {
+                        text: 'Hyundai IONIQ Hybrid',
+                        value: 'IONIQ_HEV'
+                    }, {
+                        text: 'Hyundai IONIQ PlugIn-Hybrid',
+                        value: 'IONIQ_PHEV'
+                    }, {
+                        text: 'Kia Soul EV',
+                        value: 'SOUL_EV'
+                    }, {
+                        text: 'Kia Niro EV',
+                        value: 'NIRO_EV'
+                    }, {
+                        text: 'Opel Ampera E',
+                        value: 'AMPERA_E'
+                    }, {
+                        text: 'Chevrolet Bolt',
+                        value: 'BOLT_EV'
+                    }, {
+                        text: 'Renault Zoe Q210',
+                        value: 'ZOE_Q210'
+                    }]
+                }, {
+                    value: '',
+                    title: 'Consumption',
+                    hint: 'kWh/100km',
+                    type: 'slider',
+                    step: 0.1,
+                    min: 8,
+                    max: 30
                 }]
             }],
             showSnackbar: false,
@@ -203,5 +252,11 @@
     .v-list__tile {
         min-height: 48px;
         height: auto;
+    }
+    .v-list__tile__content {
+        overflow: unset;
+    }
+    .v-input--slider {
+        width: calc(100% - 25px);
     }
 </style>

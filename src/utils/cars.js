@@ -11,6 +11,18 @@ export default {
         NORMAL_SPEED: 4.6,
         FAST_SPEED: 40
     },
+    BOLT_EV: {
+        CAPACITY: 60,
+        SLOW_SPEED: 2.3,
+        NORMAL_SPEED: 4.6,
+        FAST_SPEED: 40
+    },
+    NIRO_EV: {
+        CAPACITY: 64,
+        SLOW_SPEED: 2.3,
+        NORMAL_SPEED: 4.6,
+        FAST_SPEED: 50
+    },
     IONIQ_HEV: {
         CAPACITY: 1.6,
         SLOW_SPEED: 0,
