@@ -24,6 +24,13 @@
                         </v-list-tile-content>
                     </v-list-tile>
                 </v-list-group>
+                <v-list-tile>
+                    <v-list-tile-content class="logout-button">
+                        <v-btn flat v-if="loggedIn()" @click="logout()">
+                            <span class="mr-2">Logout</span>
+                        </v-btn>
+                    </v-list-tile-content>
+                </v-list-tile>
             </v-list>
         </v-flex>
     </v-layout>
@@ -62,6 +69,13 @@
         methods: {
             callDynamicFunction(name) {
                 this[name]();
+            },
+            loggedIn() {
+                return this.$router.currentRoute.name !== 'login';
+            },
+            logout() {
+                storage.removeValue('user');
+                this.$router.push('/login');
             }
         }
     }
@@ -77,5 +91,9 @@
     .v-list__tile {
         min-height: 48px;
         height: auto;
+    }
+    .logout-button button {
+        margin: auto auto 5px auto;
+        width:100%;
     }
 </style>

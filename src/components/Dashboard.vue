@@ -2,7 +2,7 @@
   <v-layout>
     <v-flex xs12 sm6 offset-sm3>
       <v-card>
-        <v-card-title primary-title>
+        <v-card-title>
           <div class="upper-part">
             <div class="progress-cycle-container left">
               <v-progress-circular :rotate="-90" :size="100" :width="15"

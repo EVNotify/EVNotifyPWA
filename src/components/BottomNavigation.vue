@@ -1,6 +1,9 @@
 <template>
     <v-layout>
-        <v-bottom-nav :value="true" fixed color="transparent">
+        <v-bottom-nav :value="true" fixed color="transparent" class="v-bottom-nav">
+            <div>
+                <img src="../../public/img/icons/apple-touch-icon.png"/>
+            </div>
             <v-btn flat color="teal" value="Dashboard" to="/">
                 <span>Dashboard</span>
                 <v-icon>dashboard</v-icon>
@@ -26,7 +29,10 @@
 </script>
 
 <style>
-.v-bottom-nav {
-    background-color: white !important;
-}
+    .v-bottom-nav {
+        background-color: white !important;
+    }
+    .v-bottom-nav img {
+        width:56px;
+    }
 </style>
