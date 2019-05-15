@@ -5,7 +5,10 @@
                 <v-flex xs12 sm8 md4>
                     <v-card class="elevation-12">
                         <v-toolbar>
-                            <v-toolbar-title>Login</v-toolbar-title>
+                            <v-toolbar-title class="login-form-title">
+                                <img width="40" src="../../public/img/icons/apple-touch-icon.png" fluid alt="EVNotify"/>
+                                <p>EVNotify</p>
+                            </v-toolbar-title>
                         </v-toolbar>
                         <v-card-text>
                             <v-form>
@@ -71,5 +74,16 @@
 <style>
     .login-form-content {
         width: 100%;
+        height: 80vh;
+    }
+    .login-form-title {
+        width:100%;
+    }
+    .login-form-title img {
+        float:left;
+        margin: 0 15px 0 0;
+    }
+    .login-form-title p {
+        margin: 5px 0 0 0;
     }
 </style>

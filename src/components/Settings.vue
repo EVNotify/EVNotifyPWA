@@ -95,6 +95,13 @@
                         </v-list-tile-content>
                     </v-list-tile>
                 </v-list-group>
+                <v-list-tile>
+                    <v-list-tile-content class="logout-button">
+                        <v-btn flat v-if="loggedIn()" @click="logout()">
+                            <span class="mr-2">Logout</span>
+                        </v-btn>
+                    </v-list-tile-content>
+                </v-list-tile>
             </v-list>
         </v-flex>
         <v-snackbar v-model="showSnackbar" :color="snackbarType" top>{{ snackbarMessage }}</v-snackbar>
@@ -237,6 +244,13 @@
                         self.snackbarMessage = 'Token could not be changed';
                     }
                 });
+            },
+            loggedIn() {
+                return this.$router.currentRoute.name !== 'login';
+            },
+            logout() {
+                storage.removeValue('user');
+                this.$router.push('/login');
             }
         }
     }
@@ -258,5 +272,9 @@
     }
     .v-input--slider {
         width: calc(100% - 25px);
+    }
+    .logout-button button {
+        margin: auto auto 5px auto;
+        width:100%;
     }
 </style>
