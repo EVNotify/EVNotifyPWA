@@ -3,24 +3,24 @@
         <v-container fluid fill-height>
             <v-layout align-center justify-center>
                 <v-flex xs12 sm8 md4>
-                    <v-card class="elevation-12">
-                        <v-toolbar>
-                            <v-toolbar-title>Login</v-toolbar-title>
-                        </v-toolbar>
-                        <v-card-text>
-                            <v-form>
+                    <v-form @submit.prevent="login">
+                        <v-card class="elevation-12">
+                            <v-toolbar>
+                                <v-toolbar-title>Login</v-toolbar-title>
+                            </v-toolbar>
+                            <v-card-text>
                                 <v-text-field prepend-icon="person" name="akey" label="AKey" type="text" v-model="akey"
                                     :error-messages="akeyError" required></v-text-field>
                                 <v-text-field prepend-icon="lock" name="password" label="Password" type="password"
                                     v-model="password" required :error-messages="unknownError || passwordError">
                                 </v-text-field>
-                            </v-form>
-                        </v-card-text>
-                        <v-card-actions>
-                            <v-spacer></v-spacer>
-                            <v-btn color="primary" @click="login()">Login</v-btn>
-                        </v-card-actions>
-                    </v-card>
+                            </v-card-text>
+                            <v-card-actions>
+                                <v-spacer></v-spacer>
+                                <v-btn color="primary" type="submit">Login</v-btn>
+                            </v-card-actions>
+                        </v-card>
+                    </v-form>
                 </v-flex>
             </v-layout>
         </v-container>
@@ -68,8 +68,9 @@
     }
 </script>
 
-<style>
+<style scoped>
     .login-form-content {
         width: 100%;
+        padding-bottom: 144px !important;
     }
 </style>
