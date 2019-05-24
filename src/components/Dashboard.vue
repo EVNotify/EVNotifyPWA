@@ -45,7 +45,9 @@
               </v-list>
             </div>
           </div>
-          <v-alert type="warning" :value="dataOutdated()" transition="scale-transition">{{ dataOutdatedMessage }}
+          <v-alert type="warning" :value="dataOutdated()" transition="scale-transition">
+            {{ dataOutdatedMessage }}<br>
+            <small>{{ dataOutdatedMessageTimestamp }}</small>
           </v-alert>
           <div class="bottom-part">
             <v-list two-line>
@@ -153,6 +155,7 @@
       },
       fetchInterval: 0,
       dataOutdatedMessage: '',
+      dataOutdatedMessageTimestamp: '',
       settings: storage.getValue('settings', {})
     }),
     computed: {
@@ -216,6 +219,7 @@
 
         this.dataOutdatedMessage =
           `Data outdated. Updated ${this.$root.MomentJS(new Date(lastUpdate * 1000)).fromNow()}.`;
+        this.dataOutdatedMessageTimestamp = `(${this.$root.MomentJS(new Date(lastUpdate * 1000)).format('MMMM Do YYYY HH:mm')})`;
         return !lastUpdate || lastUpdate + 600 < now;
       },
       isSupportedCar() {
