@@ -2,7 +2,7 @@
     <v-layout>
         <v-dialog v-model="changePasswordDialog" persistent max-width="290">
             <v-card>
-                <v-card-title class="headline">Reset token</v-card-title>
+                <v-card-title class="headline">Change password</v-card-title>
                 <v-card-text>
                     You are about to change your current password.
                     Please enter your current password and confirm the new password.
@@ -66,42 +66,51 @@
             </v-card>
         </v-dialog>
         <v-flex xs12 sm6 offset-sm3>
-            <v-list>
-                <v-list-group v-for="setting in settings" :key="setting.title" v-model="setting.active"
-                    :prepend-icon="setting.icon" no-action>
-                    <template v-slot:activator>
-                        <v-list-tile>
+            <v-form>
+                <v-list>
+                    <v-list-group v-for="setting in settings" :key="setting.title" v-model="setting.active"
+                        :prepend-icon="setting.icon" no-action>
+                        <template v-slot:activator>
+                            <v-list-tile>
+                                <v-list-tile-content>
+                                    <v-list-tile-title>{{ setting.title }}</v-list-tile-title>
+                                </v-list-tile-content>
+                            </v-list-tile>
+                        </template>
+                        <v-list-tile v-for="element in setting.elements" :key="element.title">
                             <v-list-tile-content>
-                                <v-list-tile-title>{{ setting.title }}</v-list-tile-title>
+                                <v-list-tile-title v-if="element.type === 'text'">{{ element.title }}
+                                </v-list-tile-title>
+                                <v-text-field v-else-if="element.type === 'password'"
+                                    :prepend-icon="element.showPassword ? 'visibility_off' : 'visibility'"
+                                    :label="element.title" :type="element.showPassword ? 'text' : 'password'" readonly
+                                    :hint="element.hint" :persistent-hint="true" :value="element.value"
+                                    @click:prepend="element.showPassword = !element.showPassword"
+                                    @change="showSaveIcon()">
+                                </v-text-field>
+                                <v-btn v-else-if="element.type === 'button'" block large :color="element.color"
+                                    @click="callDynamicFunction(element.action)">{{ element.title }}
+                                </v-btn>
+                                <v-select v-else-if="element.type === 'select'" :items="element.values"
+                                    :label="element.title" @change="element.value = $event; showSaveIcon()">
+                                </v-select>
+                                <v-slider v-else-if="element.type === 'slider'" thumb-label="always" :min="element.min"
+                                    persistent-hint :hint="element.hint" :label="element.title" :max="element.max"
+                                    :step="element.step" @change="showSaveIcon()"></v-slider>
                             </v-list-tile-content>
                         </v-list-tile>
-                    </template>
-                    <v-list-tile v-for="element in setting.elements" :key="element.title">
-                        <v-list-tile-content>
-                            <v-list-tile-title v-if="element.type === 'text'">{{ element.title }}</v-list-tile-title>
-                            <v-text-field v-else-if="element.type === 'password'"
-                                :prepend-icon="element.showPassword ? 'visibility_off' : 'visibility'"
-                                :label="element.title" :type="element.showPassword ? 'text' : 'password'" readonly
-                                :hint="element.hint" :persistent-hint="true" :value="element.value"
-                                @click:prepend="element.showPassword = !element.showPassword">
-                            </v-text-field>
-                            <v-btn v-else-if="element.type === 'button'" block large :color="element.color"
-                                @click="callDynamicFunction(element.action)">{{ element.title }}
-                            </v-btn>
-                            <v-select v-else-if="element.type === 'select'" :items="element.values"
-                                :label="element.title" @change="element.value = $event">
-                            </v-select>
-                            <v-slider v-else-if="element.type === 'slider'" thumb-label="always" :min="element.min" persistent-hint :hint="element.hint" :label="element.title" :max="element.max" :step="element.step"></v-slider>
-                        </v-list-tile-content>
-                    </v-list-tile>
-                </v-list-group>
-            </v-list>
+                    </v-list-group>
+                </v-list>
+            </v-form>
         </v-flex>
         <v-snackbar v-model="showSnackbar" :color="snackbarType" top>{{ snackbarMessage }}</v-snackbar>
     </v-layout>
 </template>
 
 <script>
+    import {
+        EventBus
+    } from '../utils/event';
     import storage from '../utils/storage';
 
     export default {
@@ -185,6 +194,9 @@
             callDynamicFunction(name) {
                 this[name]();
             },
+            showSaveIcon() {
+                EventBus.$emit('save');
+            },
             showResetTokenDialog() {
                 this.resetTokenDialog = true;
             },
@@ -253,9 +265,11 @@
         min-height: 48px;
         height: auto;
     }
+
     .v-list__tile__content {
         overflow: unset;
     }
+
     .v-input--slider {
         width: calc(100% - 25px);
     }
