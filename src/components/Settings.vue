@@ -91,11 +91,11 @@
                                 <v-btn v-else-if="element.type === 'button'" block large :color="element.color"
                                     @click="callDynamicFunction(element.action)">{{ element.title }}
                                 </v-btn>
-                                <v-select v-else-if="element.type === 'select'" :items="element.values"
+                                <v-select v-else-if="element.type === 'select'" :items="element.values" :value="element.value"
                                     :label="element.title" @change="element.value = $event; showSaveIcon()">
                                 </v-select>
                                 <v-slider v-else-if="element.type === 'slider'" thumb-label="always" :min="element.min"
-                                    persistent-hint :hint="element.hint" :label="element.title" :max="element.max"
+                                    persistent-hint :hint="element.hint" :label="element.title" :max="element.max" :value="element.value"
                                     :step="element.step" @change="element.value = $event; showSaveIcon()"></v-slider>
                             </v-list-tile-content>
                         </v-list-tile>
@@ -217,13 +217,49 @@
                 Storage.removeValue('user');
                 this.$router.push('/login');
             },
-            save() {
+            retrieveSettings() {
+                const settings = {};
+
                 this.settings.forEach((setting) => {
-                    console.log(setting.elements.filter((element) => element.id).map((element) => ({
+                    setting.elements.filter((element) => element.id).map((element) => ({
                         key: element.id,
                         value: element.value
-                    })));
-                })
+                    })).forEach((obj) => settings[obj.key] = obj.value);
+                });
+                return settings;
+            },
+            loadSettings() {
+                const localSettings = Storage.getValue('settings', {});
+
+                Object.keys(localSettings).forEach((local) => {
+                    this.settings.forEach((setting, idX) => {
+                        const current = setting.elements.filter((element) => element.id === local)[0];
+
+                        if (current) current.value = localSettings[local];
+                    })
+                });
+            },
+            saveSettings() {
+                const self = this;
+                const settings = self.retrieveSettings();
+
+                self.$root.EVNotify.getSettings((err, serverSettings) => {
+                    if (!err && serverSettings) {
+                        Object.keys(settings).forEach((setting) => {
+                            serverSettings[setting] = settings[setting];
+                        });
+                        self.$root.EVNotify.setSettings(serverSettings, (err) => {
+                            if (!err) {
+                                Storage.setValue('settings', serverSettings);
+                                // TODO
+                            } else {
+                                // TODO
+                            }
+                        });
+                    } else {
+                        // TODO
+                    }
+                });
             },
             changePassword() {
                 var self = this;
@@ -274,7 +310,8 @@
             }
         },
         mounted() {
-            EventBus.$on('saved', () => console.log(this.save()));
+            this.loadSettings();
+            EventBus.$on('saved', () => this.saveSettings());
         }
     }
 </script>
