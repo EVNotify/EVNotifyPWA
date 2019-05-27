@@ -232,7 +232,7 @@
                 const localSettings = Storage.getValue('settings', {});
 
                 Object.keys(localSettings).forEach((local) => {
-                    this.settings.forEach((setting, idX) => {
+                    this.settings.forEach((setting) => {
                         const current = setting.elements.filter((element) => element.id === local)[0];
 
                         if (current) current.value = localSettings[local];
