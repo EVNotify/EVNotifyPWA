@@ -251,6 +251,7 @@
                         self.$root.EVNotify.setSettings(serverSettings, (err) => {
                             if (!err) {
                                 Storage.setValue('settings', serverSettings);
+                                EventBus.$emit('unsave');
                                 // TODO
                             } else {
                                 // TODO
@@ -312,6 +313,9 @@
         mounted() {
             this.loadSettings();
             EventBus.$on('saved', () => this.saveSettings());
+        },
+        beforeDestroy() {
+            EventBus.$emit('unsave');
         }
     }
 </script>

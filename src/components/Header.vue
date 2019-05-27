@@ -32,6 +32,7 @@
         },
         mounted() {
             EventBus.$on('save', () => this.saved = true);
+            EventBus.$on('unsave', () => this.saved = false);
         }
     }
 </script>
