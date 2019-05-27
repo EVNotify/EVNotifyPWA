@@ -7,7 +7,7 @@
         <v-spacer></v-spacer>
         <v-expand-transition>
             <div v-show="saved">
-                <v-btn flat color="teal" class="save-btn">
+                <v-btn flat color="teal" class="save-btn" @click="emitSave()">
                     <v-icon>save</v-icon>
                 </v-btn>
             </div>
@@ -25,6 +25,11 @@
         data: () => ({
             saved: false
         }),
+        methods: {
+            emitSave() {
+                EventBus.$emit('saved');
+            }
+        },
         mounted() {
             EventBus.$on('save', () => this.saved = true);
         }

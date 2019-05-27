@@ -96,7 +96,7 @@
                                 </v-select>
                                 <v-slider v-else-if="element.type === 'slider'" thumb-label="always" :min="element.min"
                                     persistent-hint :hint="element.hint" :label="element.title" :max="element.max"
-                                    :step="element.step" @change="showSaveIcon()"></v-slider>
+                                    :step="element.step" @change="element.value = $event; showSaveIcon()"></v-slider>
                             </v-list-tile-content>
                         </v-list-tile>
                     </v-list-group>
@@ -111,7 +111,7 @@
     import {
         EventBus
     } from '../utils/event';
-    import storage from '../utils/storage';
+    import Storage from '../utils/storage';
 
     export default {
         data: () => ({
@@ -119,11 +119,11 @@
                 title: 'Credentials',
                 icon: 'account_circle',
                 elements: [{
-                    title: `AKey: ${storage.getValue('user', {}).akey}`,
+                    title: `AKey: ${Storage.getValue('user', {}).akey}`,
                     type: 'text'
                 }, {
                     title: 'Token',
-                    value: storage.getValue('user', {}).token,
+                    value: Storage.getValue('user', {}).token,
                     showPassword: false,
                     hint: 'It is like a password. Do not share this with people you do not trust!',
                     type: 'password'
@@ -137,11 +137,17 @@
                     type: 'button',
                     color: 'warning',
                     action: 'showResetTokenDialog'
+                }, {
+                    title: 'Logout',
+                    type: 'button',
+                    color: 'white',
+                    action: 'logout'
                 }]
             }, {
                 title: 'Car',
                 icon: 'directions_car',
                 elements: [{
+                    id: 'car',
                     value: '',
                     title: 'Car selection',
                     type: 'select',
@@ -161,6 +167,9 @@
                         text: 'Kia Niro EV',
                         value: 'NIRO_EV'
                     }, {
+                        text: 'Hyundai Kona EV',
+                        value: 'KONA_EV'
+                    }, {
                         text: 'Opel Ampera E',
                         value: 'AMPERA_E'
                     }, {
@@ -171,6 +180,7 @@
                         value: 'ZOE_Q210'
                     }]
                 }, {
+                    id: 'consumption',
                     value: '',
                     title: 'Consumption',
                     hint: 'kWh/100km',
@@ -202,6 +212,18 @@
             },
             showChangePasswordDialog() {
                 this.changePasswordDialog = true;
+            },
+            logout() {
+                Storage.removeValue('user');
+                this.$router.push('/login');
+            },
+            save() {
+                this.settings.forEach((setting) => {
+                    console.log(setting.elements.filter((element) => element.id).map((element) => ({
+                        key: element.id,
+                        value: element.value
+                    })));
+                })
             },
             changePassword() {
                 var self = this;
@@ -237,10 +259,10 @@
                     self.resetTokenDialog = false;
                     self.showSnackbar = true;
                     if (!err && token) {
-                        const user = storage.getValue('user', {});
+                        const user = Storage.getValue('user', {});
 
                         user.token = token;
-                        storage.setValue('user', user);
+                        Storage.setValue('user', user);
                         self.snackbarType = 'success';
                         self.snackbarMessage = 'Token changed';
                         self.settings[0].elements[1].value = token;
@@ -250,6 +272,9 @@
                     }
                 });
             }
+        },
+        mounted() {
+            EventBus.$on('saved', () => console.log(this.save()));
         }
     }
 </script>
