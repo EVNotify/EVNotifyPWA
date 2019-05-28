@@ -31,7 +31,7 @@
                   </v-list-tile-action>
                   <v-list-tile-content>
                     <v-list-tile-title>{{ currentRange }} / {{ totalRange }} km</v-list-tile-title>
-                    <span class="font-weight-light font-italic">{{ settings.consumption || 0 }}kWh / 100 km</span>
+                    <span class="font-weight-light font-italic">{{ settings.consumption || 0 }} kWh / 100 km</span>
                   </v-list-tile-content>
                 </v-list-tile>
                 <v-list-tile v-if="syncData.charging && isSupportedCar()">
