@@ -65,6 +65,23 @@
                 </v-card-actions>
             </v-card>
         </v-dialog>
+        <v-dialog v-model="telegramDialog" persistent max-width="290">
+            <v-card>
+                <v-card-title class="headline">Telegram integration</v-card-title>
+                <v-card-text v-if="localSettings.telegram">
+                    You have linked your account with <a href="https://t.me/evnotify2bot">Telegram</a>.
+                    In order to remove the integration, simply enter <b><i>/unsubscribe</i></b> within bot.
+                </v-card-text>
+                <v-card-text v-else>
+                    In order to be informed about the state of charge and to query it via Telegram,
+                    the account must be linked.
+                    Enter the token (<b>{{ token }}</b>) - never share it with people you do not trust.
+                    You can copy the token and write it to the bot after typing <b><i>/subscribe</i></b>.
+                    Just as well, you can also unsubscribe with <b><i>/unsubscribe</i></b> with telegram.
+                    Open the bot <a href="https://t.me/evnotify2bot">here</a>.
+                </v-card-text>
+            </v-card>
+        </v-dialog>
         <v-flex xs12 sm6 offset-sm3>
             <v-form>
                 <v-list>
@@ -91,12 +108,22 @@
                                 <v-btn v-else-if="element.type === 'button'" block large :color="element.color"
                                     @click="callDynamicFunction(element.action)">{{ element.title }}
                                 </v-btn>
-                                <v-select v-else-if="element.type === 'select'" :items="element.values" :value="element.value"
-                                    :label="element.title" @change="element.value = $event; showSaveIcon()">
+                                <v-select v-else-if="element.type === 'select'" :items="element.values"
+                                    :value="element.value" :label="element.title"
+                                    @change="element.value = $event; showSaveIcon()">
                                 </v-select>
                                 <v-slider v-else-if="element.type === 'slider'" thumb-label="always" :min="element.min"
-                                    persistent-hint :hint="element.hint" :label="element.title" :max="element.max" :value="element.value"
-                                    :step="element.step" @change="element.value = $event; showSaveIcon()"></v-slider>
+                                    persistent-hint :hint="element.hint" :label="element.title" :max="element.max"
+                                    :value="element.value" :step="element.step"
+                                    @input="element.value = $event; showSaveIcon()">
+                                </v-slider>
+                                <v-text-field v-else-if="element.type === 'textfield'" :label="element.title"
+                                    @input="element.value = $event; showSaveIcon()" :value="element.value">
+                                </v-text-field>
+                                <v-switch v-else-if="element.type === 'switch'" :label="element.title"
+                                    @change="element.value = $event; showSaveIcon()" :value="element.value"
+                                    :hint="element.hint" :persistent-hint="true">
+                                </v-switch>
                             </v-list-tile-content>
                         </v-list-tile>
                     </v-list-group>
@@ -189,13 +216,36 @@
                     min: 8,
                     max: 30
                 }]
+            }, {
+                title: 'Notifications',
+                icon: 'notifications_active',
+                elements: [{
+                    id: 'email',
+                    value: '',
+                    title: 'Mail address',
+                    type: 'textfield'
+                }, {
+                    title: 'Telegram integration',
+                    type: 'button',
+                    color: 'primary',
+                    action: 'showTelegramDialog'
+                }, {
+                    id: 'push',
+                    value: '',
+                    title: 'Push Notifications',
+                    hint: 'Push for EVNotify mobile app, not web',
+                    type: 'switch'
+                }]
             }],
+            token: Storage.getValue('user', {}).token,
+            localSettings: {},
             showSnackbar: false,
             snackbarMessage: '',
             snackbarType: 'info',
             errorMessage: '',
             resetTokenDialog: false,
             changePasswordDialog: false,
+            telegramDialog: false,
             password: '',
             newPassword: '',
             newPassword2: ''
@@ -212,6 +262,9 @@
             },
             showChangePasswordDialog() {
                 this.changePasswordDialog = true;
+            },
+            showTelegramDialog() {
+                this.telegramDialog = true;
             },
             logout() {
                 Storage.removeValue('user');
@@ -238,6 +291,7 @@
                         if (current) current.value = localSettings[local];
                     })
                 });
+                this.localSettings = localSettings;
             },
             saveSettings() {
                 const self = this;
@@ -250,6 +304,7 @@
                         });
                         self.$root.EVNotify.setSettings(serverSettings, (err) => {
                             if (!err) {
+                                this.localSettings = serverSettings;
                                 Storage.setValue('settings', serverSettings);
                                 EventBus.$emit('unsave');
                                 // TODO
