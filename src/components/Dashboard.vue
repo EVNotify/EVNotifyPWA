@@ -217,9 +217,13 @@
         const lastUpdate = this.syncData.last_extended > this.syncData.last_soc ?
           this.syncData.last_extended : this.syncData.last_soc;
 
-        this.dataOutdatedMessage =
-          `Data outdated. Updated ${this.$root.MomentJS(new Date(lastUpdate * 1000)).fromNow()}.`;
-        this.dataOutdatedMessageTimestamp = `(${this.$root.MomentJS(new Date(lastUpdate * 1000)).format('MMMM Do YYYY HH:mm')})`;
+        if(!lastUpdate) {
+          this.dataOutdatedMessage = `There has never been a connection to a car. Please connect your car first time.`
+        } else {
+          this.dataOutdatedMessage =
+                  `Data outdated. Updated ${this.$root.MomentJS(new Date(lastUpdate * 1000)).fromNow()}.`;
+          this.dataOutdatedMessageTimestamp = `(${this.$root.MomentJS(new Date(lastUpdate * 1000)).format('MMMM Do YYYY HH:mm')})`;
+        }
         return !lastUpdate || lastUpdate + 600 < now;
       },
       isSupportedCar() {
