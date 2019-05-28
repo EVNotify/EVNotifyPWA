@@ -80,6 +80,10 @@
                     Just as well, you can also unsubscribe with <b><i>/unsubscribe</i></b> with telegram.
                     Open the bot <a href="https://t.me/evnotify2bot">here</a>.
                 </v-card-text>
+                <v-card-actions>
+                    <v-spacer></v-spacer>
+                    <v-btn color="teal" flat @click="telegramDialog = false">Close</v-btn>
+                </v-card-actions>
             </v-card>
         </v-dialog>
         <v-flex xs12 sm6 offset-sm3>
