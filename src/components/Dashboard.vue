@@ -219,8 +219,7 @@
 
         if(!lastUpdate) {
           this.dataOutdatedMessage = `There has never been a connection to a car. Please connect your car first time.`
-        }
-        else {
+        } else {
           this.dataOutdatedMessage =
                   `Data outdated. Updated ${this.$root.MomentJS(new Date(lastUpdate * 1000)).fromNow()}.`;
           this.dataOutdatedMessageTimestamp = `(${this.$root.MomentJS(new Date(lastUpdate * 1000)).format('MMMM Do YYYY HH:mm')})`;
