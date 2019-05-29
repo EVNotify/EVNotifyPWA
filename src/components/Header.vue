@@ -1,7 +1,7 @@
 <template>
-    <v-toolbar app absolute ref="header">
+    <v-toolbar app absolute ref="header" v-if="saved">
         <v-toolbar-title class="headline">
-            <span>EVNotify </span>
+            <span>EVNotify</span>
             <span class="font-weight-light hidden-xs-only">Webinterface</span>
         </v-toolbar-title>
         <v-spacer></v-spacer>
@@ -12,7 +12,6 @@
                 </v-btn>
             </div>
         </v-expand-transition>
-
     </v-toolbar>
 </template>
 
