@@ -282,4 +282,16 @@
   .last-tile {
     padding-bottom: 56px;
   }
+  .v-card__title--primary {
+    padding-top: 5px;
+  }
+  .v-subheader {
+    height: 20px;
+  }
+</style>
+
+<style>
+  .v-list--two-line .v-list__tile {
+    height: 60px;
+  }
 </style>
