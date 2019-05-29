@@ -151,7 +151,12 @@
         battery_inlet_temperature: 0,
         charging: 0,
         last_extended: 0,
-        last_soc: 0
+        last_soc: 0,
+        dc_battery_current: 0,
+        dc_battery_voltage: 0,
+        cumulative_energy_charged: 0,
+        aux_battery_voltage: 0,
+        soh: 0
       },
       fetchInterval: 0,
       dataOutdatedMessage: '',
