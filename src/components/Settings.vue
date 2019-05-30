@@ -109,8 +109,8 @@
                                     @click:prepend="element.showPassword = !element.showPassword"
                                     @change="showSaveIcon()">
                                 </v-text-field>
-                                <v-btn v-else-if="element.type === 'button'" block large :color="element.color"
-                                    @click="callDynamicFunction(element.action)">{{ element.title }}
+                                <v-btn v-else-if="element.type === 'button'" :flat="!!element.flat" :block="!element.flat" large :color="element.color"
+                                    @click="element.href ? '' : callDynamicFunction(element.action)" :href="element.href">{{ element.title }}
                                 </v-btn>
                                 <v-select v-else-if="element.type === 'select'" :items="element.values"
                                     :value="element.value" :label="element.title"
@@ -239,6 +239,15 @@
                     title: 'Push Notifications',
                     hint: 'Push for EVNotify mobile app, not web',
                     type: 'switch'
+                }]
+            }, {
+                title: 'Privacy',
+                icon: 'security',
+                elements: [{
+                    title: 'Data protection',
+                    type: 'button',
+                    href: 'https://evnotify.de/datenschutz',
+                    flat: true
                 }]
             }],
             token: Storage.getValue('user', {}).token,
