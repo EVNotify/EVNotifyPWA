@@ -39,7 +39,7 @@
                     <v-icon color="teal">schedule</v-icon>
                   </v-list-tile-action>
                   <v-list-tile-content>
-                    <v-list-tile-title>{{ chargingTimeLeft}} h</v-list-tile-title>
+                    <v-list-tile-title>{{ chargingTimeLeft }} h</v-list-tile-title>
                   </v-list-tile-content>
                 </v-list-tile>
               </v-list>
@@ -59,14 +59,14 @@
                 <v-list-tile-content>
                   <v-list-tile-title>
                     <p class="temperature-text" :style="{color: getTemperatureColor(syncData.battery_min_temperature)}">
-                      {{ syncData.battery_min_temperature }}
+                      {{ syncData.battery_min_temperature || 0 }}
                     </p> /
                     <p class="temperature-text" :style="{color: getTemperatureColor(syncData.battery_max_temperature)}">
-                      {{ syncData.battery_max_temperature }}
+                      {{ syncData.battery_max_temperature || 0 }}
                     </p> /
                     <p class="temperature-text"
                       :style="{color: getTemperatureColor(syncData.battery_inlet_temperature)}">
-                      {{ syncData.battery_inlet_temperature }}
+                      {{ syncData.battery_inlet_temperature || 0 }}
                     </p> °C
                   </v-list-tile-title>
                   <v-list-tile-sub-title>Min / Max / Inlet</v-list-tile-sub-title>
@@ -78,7 +78,7 @@
                   <v-icon color="teal">battery_std</v-icon>
                 </v-list-tile-action>
                 <v-list-tile-content>
-                  <v-list-tile-title>{{ syncData.soc_bms }} %</v-list-tile-title>
+                  <v-list-tile-title>{{ syncData.soc_bms || 0 }} %</v-list-tile-title>
                   <v-list-tile-sub-title>SOC BMS</v-list-tile-sub-title>
                 </v-list-tile-content>
               </v-list-tile>
@@ -87,7 +87,7 @@
                   <v-icon color="teal">favorite</v-icon>
                 </v-list-tile-action>
                 <v-list-tile-content>
-                  <v-list-tile-title>{{ syncData.soh }} %</v-list-tile-title>
+                  <v-list-tile-title>{{ syncData.soh || 0 }} %</v-list-tile-title>
                   <v-list-tile-sub-title>State of Health (SOH)</v-list-tile-sub-title>
                 </v-list-tile-content>
               </v-list-tile>
@@ -96,7 +96,7 @@
                   <v-icon color="teal">flash_auto</v-icon>
                 </v-list-tile-action>
                 <v-list-tile-content>
-                  <v-list-tile-title>{{ syncData.aux_battery_voltage }} V</v-list-tile-title>
+                  <v-list-tile-title>{{ syncData.aux_battery_voltage || 0 }} V</v-list-tile-title>
                   <v-list-tile-sub-title>Aux Battery Voltage</v-list-tile-sub-title>
                 </v-list-tile-content>
               </v-list-tile>
@@ -106,7 +106,7 @@
                   <v-icon color="teal">battery_charging_full</v-icon>
                 </v-list-tile-action>
                 <v-list-tile-content>
-                  <v-list-tile-title>{{ syncData.dc_battery_voltage }} V</v-list-tile-title>
+                  <v-list-tile-title>{{ syncData.dc_battery_voltage || 0 }} V</v-list-tile-title>
                   <v-list-tile-sub-title>Battery voltage</v-list-tile-sub-title>
                 </v-list-tile-content>
               </v-list-tile>
@@ -115,7 +115,7 @@
                   <v-icon color="teal">power</v-icon>
                 </v-list-tile-action>
                 <v-list-tile-content>
-                  <v-list-tile-title>{{ syncData.dc_battery_current }} A</v-list-tile-title>
+                  <v-list-tile-title>{{ syncData.dc_battery_current || 0 }} A</v-list-tile-title>
                   <v-list-tile-sub-title>Battery current</v-list-tile-sub-title>
                 </v-list-tile-content>
               </v-list-tile>
@@ -124,7 +124,7 @@
                   <v-icon color="teal">battery_unknown</v-icon>
                 </v-list-tile-action>
                 <v-list-tile-content>
-                  <v-list-tile-title>{{ syncData.cumulative_energy_charged }} kWh</v-list-tile-title>
+                  <v-list-tile-title>{{ syncData.cumulative_energy_charged || 0 }} kWh</v-list-tile-title>
                   <v-list-tile-sub-title>Cumulative energy charged</v-list-tile-sub-title>
                 </v-list-tile-content>
               </v-list-tile>
@@ -151,7 +151,12 @@
         battery_inlet_temperature: 0,
         charging: 0,
         last_extended: 0,
-        last_soc: 0
+        last_soc: 0,
+        dc_battery_current: 0,
+        dc_battery_voltage: 0,
+        cumulative_energy_charged: 0,
+        aux_battery_voltage: 0,
+        soh: 0
       },
       fetchInterval: 0,
       dataOutdatedMessage: '',
