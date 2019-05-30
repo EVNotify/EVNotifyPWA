@@ -8,7 +8,7 @@
               <v-progress-circular :rotate="-90" :size="100" :width="15"
                 :value="syncData.soc_display || syncData.soc_bms" :color="cycleColor">
                 <div class="progress-cycle-text-container">
-                  <p>{{ syncData.soc_display ||syncData.soc_bms }}</p>
+                  <p>{{ syncData.soc_display ||syncData.soc_bms }} %</p>
                   <v-icon color="primary" v-if="syncData.charging">flash_on</v-icon>
                 </div>
               </v-progress-circular>
@@ -31,7 +31,7 @@
                   </v-list-tile-action>
                   <v-list-tile-content>
                     <v-list-tile-title>{{ currentRange }} / {{ totalRange }} km</v-list-tile-title>
-                    <span class="font-weight-light font-italic">{{ settings.consumption || 0 }}kWh / 100 km</span>
+                    <span class="font-weight-light font-italic">{{ settings.consumption || 0 }} kWh / 100 km</span>
                   </v-list-tile-content>
                 </v-list-tile>
                 <v-list-tile v-if="syncData.charging && isSupportedCar()">
