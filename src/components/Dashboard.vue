@@ -30,7 +30,7 @@
                     <v-icon color="teal">drive_eta</v-icon>
                   </v-list-tile-action>
                   <v-list-tile-content>
-                    <v-list-tile-title>{{ currentRange }} / {{ totalRange }} km</v-list-tile-title>
+                    <v-list-tile-title :style="{color: currentRangeColor}">{{ currentRange }} / {{ totalRange }} km</v-list-tile-title>
                     <span class="font-weight-light font-italic">{{ settings.consumption || 0 }} kWh / 100 km</span>
                   </v-list-tile-content>
                 </v-list-tile>
@@ -191,6 +191,12 @@
 
         return parseInt(this.totalRange * ((soc === 100) ? 1 : '0.' + ((soc < 10) ? ('0' + parseInt(soc)) :
           parseInt(soc)))) || 0;
+      },
+      currentRangeColor() {
+        if (this.currentRange < (this.totalRange * 10 / 100)) {
+          return 'red';
+        }
+        return 'green';
       },
       totalRange() {
         return parseInt((cars[this.settings.car].CAPACITY / this.settings.consumption) * 100) || 0;
