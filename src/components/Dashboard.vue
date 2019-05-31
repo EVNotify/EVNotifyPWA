@@ -139,6 +139,7 @@
 <script>
   import storage from '../utils/storage';
   import cars from '../utils/cars';
+  import general from '../utils/general';
 
   export default {
     data: () => ({
@@ -175,29 +176,10 @@
         return 'red';
       },
       chargingTimeLeft() {
-        const capacity = cars[this.settings.car].CAPACITY;
-        const soc = this.syncData.soc_display || this.syncData.soc_bms;
-        const amountToCharge = capacity - parseFloat(
-          capacity * ((soc === 100) ? 1 : '0.' + ((soc < 10) ? ('0' + parseInt(soc)) : parseInt(soc)))
-        ).toFixed(2) || 0;
-        const decimalTime = parseFloat(
-          amountToCharge / (Math.abs(this.syncData.dc_battery_power) || cars[this.settings.car].FAST_SPEED)
-        ).toFixed(2);
-        const duration = this.$root.MomentJS.duration(parseFloat(decimalTime)).asMilliseconds();
-        return this.$root.MomentJS().startOf('day').add(duration, 'minutes').format('m:ss');
+        return general.chargeTime(this.settings.car, this.syncData.soc_display, this.syncData.soc_bms, this.syncData.dc_battery_power, "timeleft");
       },
       finishTime() {
-        const capacity = cars[this.settings.car].CAPACITY;
-        const soc = this.syncData.soc_display || this.syncData.soc_bms;
-        const amountToCharge = capacity - parseFloat(
-                capacity * ((soc === 100) ? 1 : '0.' + ((soc < 10) ? ('0' + parseInt(soc)) : parseInt(soc)))
-        ).toFixed(2) || 0;
-        const decimalTime = parseFloat(
-                amountToCharge / (Math.abs(this.syncData.dc_battery_power) || cars[this.settings.car].FAST_SPEED)
-        ).toFixed(2);
-        const duration = this.$root.MomentJS.duration(parseFloat(decimalTime)).asMilliseconds();
-        const now = new Date().getTime();
-        return this.$root.MomentJS(now).add(duration, 'hours').format('HH:mm');
+        return general.chargeTime(this.settings.car, this.syncData.soc_display, this.syncData.soc_bms, this.syncData.dc_battery_power, "finishtime");
       },
       currentRange() {
         const soc = this.syncData.soc_display || this.syncData.soc_bms;
