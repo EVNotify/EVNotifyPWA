@@ -2,7 +2,6 @@ import cars from '../utils/cars';
 import MomentJS from 'moment';
 
 export default {
-
     /**
      * Calculates chargetime left and finishtime while charging
      * @param {String} car the cartype to get the chargetime to
@@ -30,6 +29,5 @@ export default {
         } else {
             return false;
         }
-
     }
 }
