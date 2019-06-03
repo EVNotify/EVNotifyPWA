@@ -86,6 +86,32 @@
                 </v-card-actions>
             </v-card>
         </v-dialog>
+        <v-dialog v-model="abrpDialog" persistent max-width="290">
+            <v-card>
+                <v-card-title class="headline">ABRP integration</v-card-title>
+                <v-card-text v-if="localSettings.abrp">
+                    You have linked your account with <a href="https://abetterrouteplanner.com">A better route planner</a>.
+                </v-card-text>
+                <v-card-text v-else>
+                    In order to automatically share your realtime data with "A better route planner" (short: ABRP),
+                    you need to give EVNotify permission, to share your data with ABRP.
+                    Keep in mind, that you share data with a third-party.
+                    EVNotify does not have control about your data, once shared with others.
+                    Please refer to their <a href="https://iternio.com/index.php/integrity-policy/">Privacy policy</a>.
+                    With granting permissions, you automatically accept these guidelines.
+                    Would you like to integrate ABRP with EVNotify?
+                </v-card-text>
+                <v-card-actions v-if="localSettings.abrp">
+                    <v-spacer></v-spacer>
+                    <v-btn color="teal" flat @click="abrpDialog = false">Close</v-btn>
+                </v-card-actions>
+                <v-card-actions v-else>
+                    <v-spacer></v-spacer>
+                    <v-btn color="teal" flat @click="abrpDialog = false">Deny</v-btn>
+                    <v-btn color="warning" flat @click="abrpDialog = false; integrateABRP()">Grant</v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
         <v-flex xs12 sm6 offset-sm3>
             <v-form>
                 <v-list>
@@ -249,6 +275,15 @@
                     href: 'https://evnotify.de/datenschutz',
                     flat: true
                 }]
+            }, {
+                title: 'Integrations',
+                icon: 'people',
+                elements: [{
+                    title: 'A better Route Planner',
+                    type: 'button',
+                    color: 'primary',
+                    action: 'showABRPDialog'
+                }]
             }],
             token: Storage.getValue('user', {}).token,
             localSettings: {},
@@ -259,6 +294,7 @@
             resetTokenDialog: false,
             changePasswordDialog: false,
             telegramDialog: false,
+            abrpDialog: false,
             password: '',
             newPassword: '',
             newPassword2: ''
@@ -279,6 +315,11 @@
             showTelegramDialog() {
                 this.telegramDialog = true;
             },
+            showABRPDialog() {
+                this.loadSettings(() => {
+                    this.abrpDialog = true;
+                });
+            },
             logout() {
                 Storage.removeValue('user');
                 this.$router.push('/login');
@@ -294,17 +335,28 @@
                 });
                 return settings;
             },
-            loadSettings() {
+            loadSettings(callback) {
+                const self = this;
                 const localSettings = Storage.getValue('settings', {});
 
-                Object.keys(localSettings).forEach((local) => {
-                    this.settings.forEach((setting) => {
-                        const current = setting.elements.filter((element) => element.id === local)[0];
+                const displaySettings = (settings) => {
+                    Object.keys(settings).forEach((key) => {
+                        this.settings.forEach((setting) => {
+                            const current = setting.elements.filter((element) => element.id === key)[0];
 
-                        if (current) current.value = localSettings[local];
-                    })
+                            if (current) current.value = localSettings[key];
+                        });
+                    });
+                };
+
+                self.$root.EVNotify.getSettings((err, serverSettings) => {
+                    if (!err && serverSettings) {
+                        displaySettings((self.localSettings = Storage.setValue('settings', serverSettings)));
+                    } else {
+                        displaySettings((self.localSettings = Storage.getValue('settings', {})));
+                    }
+                    if (typeof callback === 'function') callback(err, serverSettings);
                 });
-                this.localSettings = localSettings;
             },
             saveSettings() {
                 const self = this;
@@ -376,6 +428,11 @@
                         self.snackbarMessage = 'Token could not be changed';
                     }
                 });
+            },
+            integrateABRP() {
+                const user = Storage.getValue('user', {});
+
+                window.open(`https://abetterrouteplanner.com/oauth/auth?client_id=8&redirect_uri=https://app.evnotify.de/integrations/abrp/auth/${user.akey}/${user.token}`, '_blank');
             }
         },
         mounted() {
