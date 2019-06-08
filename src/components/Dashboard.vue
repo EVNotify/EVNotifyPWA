@@ -8,7 +8,7 @@
               <v-progress-circular :rotate="-90" :size="100" :width="15"
                 :value="syncData.soc_display || syncData.soc_bms" :color="cycleColor">
                 <div class="progress-cycle-text-container">
-                  <p>{{ syncData.soc_display ||syncData.soc_bms }}</p>
+                  <p>{{ syncData.soc_display ||syncData.soc_bms }} %</p>
                   <v-icon color="primary" v-if="syncData.charging">flash_on</v-icon>
                 </div>
               </v-progress-circular>
@@ -30,8 +30,8 @@
                     <v-icon color="teal">drive_eta</v-icon>
                   </v-list-tile-action>
                   <v-list-tile-content>
-                    <v-list-tile-title>{{ currentRange }} / {{ totalRange }} km</v-list-tile-title>
-                    <span class="font-weight-light font-italic">{{ settings.consumption || 0 }}kWh / 100 km</span>
+                    <v-list-tile-title :style="{color: currentRangeColor}">{{ currentRange }} / {{ totalRange }} km</v-list-tile-title>
+                    <span class="font-weight-light font-italic">{{ settings.consumption || 0 }} kWh / 100 km</span>
                   </v-list-tile-content>
                 </v-list-tile>
                 <v-list-tile v-if="syncData.charging && isSupportedCar()">
@@ -59,14 +59,14 @@
                 <v-list-tile-content>
                   <v-list-tile-title>
                     <p class="temperature-text" :style="{color: getTemperatureColor(syncData.battery_min_temperature)}">
-                      {{ syncData.battery_min_temperature }}
+                      {{ syncData.battery_min_temperature || 0 }}
                     </p> /
                     <p class="temperature-text" :style="{color: getTemperatureColor(syncData.battery_max_temperature)}">
-                      {{ syncData.battery_max_temperature }}
+                      {{ syncData.battery_max_temperature || 0 }}
                     </p> /
                     <p class="temperature-text"
                       :style="{color: getTemperatureColor(syncData.battery_inlet_temperature)}">
-                      {{ syncData.battery_inlet_temperature }}
+                      {{ syncData.battery_inlet_temperature || 0 }}
                     </p> °C
                   </v-list-tile-title>
                   <v-list-tile-sub-title>Min / Max / Inlet</v-list-tile-sub-title>
@@ -78,7 +78,7 @@
                   <v-icon color="teal">battery_std</v-icon>
                 </v-list-tile-action>
                 <v-list-tile-content>
-                  <v-list-tile-title>{{ syncData.soc_bms }} %</v-list-tile-title>
+                  <v-list-tile-title>{{ syncData.soc_bms || 0 }} %</v-list-tile-title>
                   <v-list-tile-sub-title>SOC BMS</v-list-tile-sub-title>
                 </v-list-tile-content>
               </v-list-tile>
@@ -87,7 +87,7 @@
                   <v-icon color="teal">favorite</v-icon>
                 </v-list-tile-action>
                 <v-list-tile-content>
-                  <v-list-tile-title>{{ syncData.soh }} %</v-list-tile-title>
+                  <v-list-tile-title>{{ syncData.soh || 0 }} %</v-list-tile-title>
                   <v-list-tile-sub-title>State of Health (SOH)</v-list-tile-sub-title>
                 </v-list-tile-content>
               </v-list-tile>
@@ -96,7 +96,7 @@
                   <v-icon color="teal">flash_auto</v-icon>
                 </v-list-tile-action>
                 <v-list-tile-content>
-                  <v-list-tile-title>{{ syncData.aux_battery_voltage }} V</v-list-tile-title>
+                  <v-list-tile-title>{{ syncData.aux_battery_voltage || 0 }} V</v-list-tile-title>
                   <v-list-tile-sub-title>Aux Battery Voltage</v-list-tile-sub-title>
                 </v-list-tile-content>
               </v-list-tile>
@@ -106,7 +106,7 @@
                   <v-icon color="teal">battery_charging_full</v-icon>
                 </v-list-tile-action>
                 <v-list-tile-content>
-                  <v-list-tile-title>{{ syncData.dc_battery_voltage }} V</v-list-tile-title>
+                  <v-list-tile-title>{{ syncData.dc_battery_voltage || 0 }} V</v-list-tile-title>
                   <v-list-tile-sub-title>Battery voltage</v-list-tile-sub-title>
                 </v-list-tile-content>
               </v-list-tile>
@@ -115,7 +115,7 @@
                   <v-icon color="teal">power</v-icon>
                 </v-list-tile-action>
                 <v-list-tile-content>
-                  <v-list-tile-title>{{ syncData.dc_battery_current }} A</v-list-tile-title>
+                  <v-list-tile-title>{{ syncData.dc_battery_current || 0 }} A</v-list-tile-title>
                   <v-list-tile-sub-title>Battery current</v-list-tile-sub-title>
                 </v-list-tile-content>
               </v-list-tile>
@@ -124,7 +124,7 @@
                   <v-icon color="teal">battery_unknown</v-icon>
                 </v-list-tile-action>
                 <v-list-tile-content>
-                  <v-list-tile-title>{{ syncData.cumulative_energy_charged }} kWh</v-list-tile-title>
+                  <v-list-tile-title>{{ syncData.cumulative_energy_charged || 0 }} kWh</v-list-tile-title>
                   <v-list-tile-sub-title>Cumulative energy charged</v-list-tile-sub-title>
                 </v-list-tile-content>
               </v-list-tile>
@@ -152,7 +152,12 @@
         battery_inlet_temperature: 0,
         charging: 0,
         last_extended: 0,
-        last_soc: 0
+        last_soc: 0,
+        dc_battery_current: 0,
+        dc_battery_voltage: 0,
+        cumulative_energy_charged: 0,
+        aux_battery_voltage: 0,
+        soh: 0
       },
       fetchInterval: 0,
       dataOutdatedMessage: '',
@@ -186,6 +191,12 @@
 
         return parseInt(this.totalRange * ((soc === 100) ? 1 : '0.' + ((soc < 10) ? ('0' + parseInt(soc)) :
           parseInt(soc)))) || 0;
+      },
+      currentRangeColor() {
+        if (this.currentRange < (this.totalRange * 10 / 100)) {
+          return 'red';
+        }
+        return 'green';
       },
       totalRange() {
         return parseInt((cars[this.settings.car].CAPACITY / this.settings.consumption) * 100) || 0;
@@ -276,5 +287,17 @@
 
   .last-tile {
     padding-bottom: 56px;
+  }
+  .v-card__title--primary {
+    padding-top: 5px;
+  }
+  .v-subheader {
+    height: 20px;
+  }
+</style>
+
+<style>
+  .v-list--two-line .v-list__tile {
+    height: 60px;
   }
 </style>
