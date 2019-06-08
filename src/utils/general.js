@@ -11,16 +11,8 @@ export default {
      * @param {String} typeOfTime the result timeType that gets returned
      * @returns {*} the defined and calculated timeType
      */
-    chargeTime: (car, socDisplay, socBMS, batteryPower, typeOfTime) => {
-        const capacity = cars[car].CAPACITY;
-        const soc = socDisplay || socBMS;
-        const amountToCharge = capacity - parseFloat(
-            capacity * ((soc === 100) ? 1 : '0.' + ((soc < 10) ? ('0' + parseInt(soc)) : parseInt(soc)))
-        ).toFixed(2) || 0;
-        const decimalTime = parseFloat(
-            amountToCharge / (Math.abs(batteryPower) || cars[car].FAST_SPEED)
-        ).toFixed(2);
-        const duration = MomentJS.duration(parseFloat(decimalTime)).asMilliseconds();
+    chargeTime(car, socDisplay, socBMS, batteryPower, typeOfTime) {
+        const duration = MomentJS.duration(parseFloat(this.chargeDecimalTime(car, socDisplay, socBMS, batteryPower))).asMilliseconds();
         const now = new Date().getTime();
         if(typeOfTime == "timeleft") {
             return MomentJS().startOf('day').add(duration, 'minutes').format('m:ss');
@@ -29,5 +21,16 @@ export default {
         } else {
             return false;
         }
+    },
+    chargeDecimalTime(car, socDisplay, socBMS, batteryPower) {
+        const capacity = cars[car].CAPACITY;
+        const soc = socDisplay || socBMS;
+        const amountToCharge = capacity - parseFloat(
+            capacity * ((soc === 100) ? 1 : '0.' + ((soc < 10) ? ('0' + parseInt(soc)) : parseInt(soc)))
+        ).toFixed(2) || 0;
+        const decimalTime = parseFloat(
+            amountToCharge / (Math.abs(batteryPower) || cars[car].FAST_SPEED)
+        ).toFixed(2);
+        return decimalTime;
     }
 }

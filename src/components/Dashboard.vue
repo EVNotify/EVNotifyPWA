@@ -23,6 +23,7 @@
                   </v-list-tile-action>
                   <v-list-tile-content>
                     <v-list-tile-title :style="{color: powerAmountColor}">{{ powerAmount }} kW</v-list-tile-title>
+                    <span v-if="syncData.charging" class="font-weight-light font-italic">{{ rangePerHour }} km / h</span>
                   </v-list-tile-content>
                 </v-list-tile>
                 <v-list-tile v-if="isSupportedCar()">
@@ -200,6 +201,10 @@
       },
       totalRange() {
         return parseInt((cars[this.settings.car].CAPACITY / this.settings.consumption) * 100) || 0;
+      },
+      rangePerHour() {
+        const time = general.chargeDecimalTime(this.settings.car, this.syncData.soc_display, this.syncData.soc_bms, this.syncData.dc_battery_power);
+        return parseInt(((this.totalRange - this.currentRange) / (60 / 100 * time * 100)) * 60) || 0;
       }
     },
     methods: {
