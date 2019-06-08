@@ -250,6 +250,15 @@
                 title: 'Notifications',
                 icon: 'notifications_active',
                 elements: [{
+                    id: 'soc',
+                    value: '',
+                    title: 'SOC Threshold',
+                    hint: 'When to send out notification',
+                    type: 'slider',
+                    step: 1,
+                    min: 10,
+                    max: 100
+                }, {
                     id: 'email',
                     value: '',
                     title: 'Mail address',
