@@ -74,7 +74,7 @@
                 </v-list-tile-content>
               </v-list-tile>
               <v-subheader>Battery health</v-subheader>
-              <v-list-tile>
+              <v-list-tile v-if="syncData.soc_display">
                 <v-list-tile-action>
                   <v-icon color="teal">battery_std</v-icon>
                 </v-list-tile-action>
