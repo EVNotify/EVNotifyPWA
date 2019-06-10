@@ -46,6 +46,7 @@
               </v-list>
             </div>
           </div>
+          <small class="updated-timestamp" v-if="!dataOutdated()">{{ updatedTimestamp }}</small>
           <v-alert type="warning" :value="dataOutdated()" transition="scale-transition">
             {{ dataOutdatedMessage }}<br>
             <small>{{ dataOutdatedMessageTimestamp }}</small>
@@ -141,6 +142,7 @@
   import storage from '../utils/storage';
   import cars from '../utils/cars';
   import general from '../utils/general';
+import { setInterval } from 'timers';
 
   export default {
     data: () => ({
@@ -161,6 +163,7 @@
         soh: 0
       },
       fetchInterval: 0,
+      updatedTimestamp: '',
       dataOutdatedMessage: '',
       dataOutdatedMessageTimestamp: '',
       settings: storage.getValue('settings', {})
@@ -220,13 +223,23 @@
         ['getSOC', 'getExtended'].forEach((method) => {
           self.$root.EVNotify[method]((err, obj) => {
             if (!err && obj) Object.keys(obj).forEach((key) => self.syncData[key] = obj[key]);
+            this.updateTimestamp();
+            this.dataOutdated();
           });
         });
       },
+      getLastUpdate() {
+        return this.syncData.last_extended > this.syncData.last_soc ? this.syncData.last_extended : this.syncData.last_soc
+      },
+      updateTimestamp () {
+        const lastUpdate = this.getLastUpdate();
+
+          if (!lastUpdate) this.updatedTimestamp = 'Never updated';
+          else this.updatedTimestamp = `Updated ${this.$root.MomentJS(new Date(lastUpdate * 1000)).fromNow()}`;
+      },
       dataOutdated() {
         const now = parseInt(new Date() / 1000);
-        const lastUpdate = this.syncData.last_extended > this.syncData.last_soc ?
-          this.syncData.last_extended : this.syncData.last_soc;
+        const lastUpdate = this.getLastUpdate();
 
         if(!lastUpdate) {
           this.dataOutdatedMessage = `There has never been a connection to a car. Please connect your car first time.`
@@ -264,6 +277,10 @@
   .upper-part,
   .bottom-part {
     width: 100%;
+  }
+
+  .updated-timestamp {
+    padding: 0 16px;
   }
 
   .progress-cycle-container.left {
