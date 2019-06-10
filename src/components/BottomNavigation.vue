@@ -5,7 +5,7 @@
                 <span>Dashboard</span>
                 <v-icon>dashboard</v-icon>
             </v-btn>
-            <v-btn flat color="teal" value="Logs">
+            <v-btn flat color="teal" value="Logs" to="/logs">
                 <span>Logs</span>
                 <v-icon>list</v-icon>
             </v-btn>

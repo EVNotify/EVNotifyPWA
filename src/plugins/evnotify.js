@@ -294,6 +294,25 @@ EVNotify.prototype.getExtended = function (callback) {
     return self;
 };
 
+EVNotify.prototype.getLogs = function (charge, callback) {
+    var self = this;
+
+    // check authentication
+    if (!self.akey || !self.token) {
+        if (typeof callback === 'function') callback(401, null); // missing previous login request
+    } else {
+        sendRequest('get', 'logs', {
+            akey: self.akey,
+            token: self.token,
+            charge: charge
+        }, function (err, logsObj) {
+            if (typeof callback === 'function') callback(err, ((!err && logsObj && logsObj.data) ? logsObj.data : null));
+        });
+    }
+
+    return self;
+};
+
 /**
  * Function to send out all available / enabled notifications for the AKey
  * @param  {Function} callback  callback function
