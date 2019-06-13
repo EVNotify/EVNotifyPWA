@@ -276,15 +276,6 @@
                     type: 'switch'
                 }]
             }, {
-                title: 'Privacy',
-                icon: 'security',
-                elements: [{
-                    title: 'Data protection',
-                    type: 'button',
-                    href: 'https://evnotify.de/datenschutz',
-                    flat: true
-                }]
-            }, {
                 title: 'Integrations',
                 icon: 'people',
                 elements: [{
@@ -292,6 +283,15 @@
                     type: 'button',
                     color: 'primary',
                     action: 'showABRPDialog'
+                }]
+            }, {
+                title: 'Privacy',
+                icon: 'security',
+                elements: [{
+                    title: 'Data protection',
+                    type: 'button',
+                    href: 'https://evnotify.de/datenschutz',
+                    flat: true
                 }]
             }],
             token: Storage.getValue('user', {}).token,
