@@ -2,7 +2,7 @@
     <v-layout>
         <v-flex xs12 sm6 offset-sm3>
             <v-card>
-                <v-list two-line subheader>
+                <v-list two-line subheader v-if="loaded && Object.keys(logs).length">
                     <div v-for="(month, index) in logs" :key="index">
                         <v-subheader inset>{{ convertSubHeader(index) }}</v-subheader>
                         <v-list-tile v-for="log in logs[index]" :key="log.id" avatar>
@@ -22,6 +22,14 @@
                         <v-divider inset></v-divider>
                     </div>
                 </v-list>
+                <div v-else>
+                    <v-img :src="listImg" class="empty-state-img"></v-img>
+                    <p class="headline text-xs-center" v-if="!loaded">Loading logs. Please wait...</p>
+                    <div v-else>
+                        <p class="headline text-xs-center">No logs found</p>
+                        <p class="subheading text-xs-center">Logs are automatically created, once you start monitoring your charges and drives. After finishing the monitoring, it will be processed on the server and generated to a log after a few minutes.</p>
+                    </div>
+                </div>
             </v-card>
         </v-flex>
     </v-layout>
@@ -30,8 +38,14 @@
 <script>
     export default {
         data: () => ({
-            logs: {}
+            logs: {},
+            loaded: false
         }),
+        computed: {
+            listImg() {
+                return require('../assets/list.png');
+            }
+        },
         methods: {
             convertSubHeader(date) {
                 return this.$root.MomentJS(date.split('_').reverse()).format('MMMM YYYY');
@@ -64,6 +78,7 @@
                                 if (!logs[index]) logs[index] = [];
                                 logs[index].push(log);
                             });
+                            self.loaded = true;
                             self.logs = logs;
                         }
                     });
@@ -79,5 +94,18 @@
     }
     .v-card {
         padding-bottom: 56px;
+        height: 100vh;
+    }
+    .empty-state-img {
+        max-height: 100px;
+    }
+</style>
+
+<style>
+    .empty-state-img .v-image__image {
+        width: 100px;
+        height: 100px;
+        left: calc(50% - 50px);
+        top: 10%;
     }
 </style>
