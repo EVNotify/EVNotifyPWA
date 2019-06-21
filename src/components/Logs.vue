@@ -94,7 +94,7 @@
     }
     .v-card {
         padding-bottom: 56px;
-        height: 100vh;
+        min-height: 100vh;
     }
     .empty-state-img {
         max-height: 100px;
