@@ -20,7 +20,7 @@
             </v-card>
         </v-dialog>
         <v-flex xs12 sm6 offset-sm3>
-            <v-card class="mx-auto">
+            <v-card class="mx-auto" v-if="log.id">
                 <v-card-title>
                     <v-icon class="mr-5" size="64">chevron_left</v-icon>
                     <v-layout column align-start class="average-container-text">
@@ -30,10 +30,6 @@
                             <strong>kW</strong>
                         </div>
                     </v-layout>
-                    <v-spacer></v-spacer>
-                    <v-btn icon class="align-self-start" size="28">
-                        <v-icon>multiline_chart</v-icon>
-                    </v-btn>
                 </v-card-title>
                 <v-sheet color="transparent">
                     <v-sparkline auto-draw :value="[30, 35.5, 41, 45, 41.5, 46, 47]"
@@ -47,7 +43,7 @@
                             <template v-slot:icon>
                                 <v-icon color="white">ev_station</v-icon>
                             </template>
-                            <v-text-field hide-details flat label="Log title" solo>
+                            <v-text-field hide-details flat label="Log title" solo v-model="log.title">
                                 <template v-slot:append>
                                     <v-btn class="mx-0" depressed>Save</v-btn>
                                 </template>
@@ -57,18 +53,18 @@
                             <v-layout justify-space-between>
                                 <v-flex xs-7>
                                     <v-chip class="white--text ml-0" color="accent" label small>Start</v-chip>
-                                    30% SOC
+                                    {{ startSOC }}
                                 </v-flex>
-                                <v-flex xs-5 text-xs-right>15:25</v-flex>
+                                <v-flex xs-5 text-xs-right>{{ startTime }}</v-flex>
                             </v-layout>
                         </v-timeline-item>
                         <v-timeline-item class="mb-3" small color="primary">
                             <v-layout justify-space-between>
                                 <v-flex xs-7>
                                     <v-chip class="white--text ml-0" color="primary" label small>End</v-chip>
-                                    61% SOC
+                                    {{ endSOC }}
                                 </v-flex>
-                                <v-flex xs-5 text-xs-right>15:37</v-flex>
+                                <v-flex xs-5 text-xs-right>{{ endTime }}</v-flex>
                             </v-layout>
                         </v-timeline-item>
                     </v-timeline>
@@ -87,8 +83,66 @@
 <script>
     export default {
         data: () => ({
+            id: 0,
+            log: {},
             showBtnExplaination: false
-        })
+        }),
+        methods: {
+            displayTime(unix) {
+                return this.$root.MomentJS(new Date(unix * 1000)).format('HH:mm:ss');
+            },
+            getSOCFromStats(type) {
+                let soc = 0;
+                const stats = this.log.stats;
+
+                if (type === 'start') {
+                    for (let idX = stats.length - 1; idX >= 0; idX--) {
+                        const element = stats[idX];
+
+                        if (element.soc_display || element.soc_bms) {
+                            soc = element.soc_display || element.soc_bms;
+                            break;
+                        }
+                    }
+                } else if (type === 'end') {
+                    for (let idX = 0; idX < stats.length; idX++) {
+                        const element = stats[idX];
+
+                        if (element.soc_display || element.soc_bms) {
+                            soc = element.soc_display || element.soc_bms;
+                            break;
+                        }
+                    }
+                }
+                return soc;
+            }
+        },
+        computed: {
+            startTime() {
+                return this.displayTime(this.log.start);
+            },
+            endTime() {
+                return this.displayTime(this.log.end);
+            },
+            startSOC() {
+                return this.getSOCFromStats('start') + '%';
+            },
+            endSOC() {
+                return this.getSOCFromStats('end') + '%';
+            }
+        },
+        created() {
+            this.id = this.$route.query.id;
+        },
+        mounted() {
+            const self = this;
+
+            this.$root.EVNotify.getLog(this.id, (err, log) => {
+                if (!err && log) {
+                    self.log = log;
+                }
+            });
+        }
     }
 </script>
 
@@ -103,7 +157,7 @@
     }
 
     .average-container-text {
-        width: calc(100% - 166px);
+        width: calc(100% - 112px);
     }
 
     .btn-container {

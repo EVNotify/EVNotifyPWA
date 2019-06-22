@@ -5,7 +5,7 @@
                 <v-list two-line subheader v-if="loaded && Object.keys(logs).length">
                     <div v-for="(month, index) in logs" :key="index">
                         <v-subheader inset>{{ convertSubHeader(index) }}</v-subheader>
-                        <v-list-tile v-for="log in logs[index]" :key="log.id" avatar>
+                        <v-list-tile v-for="log in logs[index]" :key="log.id" avatar @click="$router.push({name: 'log', query: {id: log.id}})">
                             <v-list-tile-avatar>
                                 <v-icon class="teal lighten-1 white--text">{{ convertIcon(log.charge) }}</v-icon>
                             </v-list-tile-avatar>
@@ -14,7 +14,7 @@
                                 <v-list-tile-sub-title>{{ convertDates(log.start, log.end) }}</v-list-tile-sub-title>
                             </v-list-tile-content>
                             <v-list-tile-action>
-                                <v-btn icon ripple>
+                                <v-btn icon ripple @click="$router.push({name: 'log', query: {id: log.id}})">
                                     <v-icon color="grey lighten-1">info</v-icon>
                                 </v-btn>
                             </v-list-tile-action>
