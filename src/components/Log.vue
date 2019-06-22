@@ -22,11 +22,11 @@
         <v-flex xs12 sm6 offset-sm3>
             <v-card class="mx-auto" v-if="log.id">
                 <v-card-title>
-                    <v-icon class="mr-5" size="64">chevron_left</v-icon>
+                    <v-icon class="mr-5" size="64" @click="$router.push('/logs')">chevron_left</v-icon>
                     <v-layout column align-start class="average-container-text">
                         <div class="caption grey--text text-uppercase">Average</div>
                         <div>
-                            <span class="display-2 font-weight-black" v-text="42.51"></span>
+                            <span class="display-2 font-weight-black">{{ avgKW }}</span>
                             <strong>kW</strong>
                         </div>
                     </v-layout>
@@ -129,6 +129,11 @@
             },
             endSOC() {
                 return this.getSOCFromStats('end') + '%';
+            },
+            avgKW() {
+                const powers = this.log.stats.filter((stat) => stat.dc_battery_power != null).map((stat) => stat.dc_battery_power);
+
+                return Math.abs(parseFloat((powers.reduce((a, b) => a + b, 0) / powers.length) || 0).toFixed(2));
             }
         },
         created() {
