@@ -4,10 +4,12 @@
             <v-card>
                 <v-card-title class="headline">Why?</v-card-title>
                 <v-card-text>
-                    Besides the fact, that pre-rendering all the data in the page, even when not required, is not good for
+                    Besides the fact, that pre-rendering all the data in the page, even when not required, is not good
+                    for
                     performance,
                     displaying the map costs also real money for me as a developer.
-                    Developing <b>EVNotify</b> costs of course a <b>lot of money</b>, so even when I'm doing this in my free time and
+                    Developing <b>EVNotify</b> costs of course a <b>lot of money</b>, so even when I'm doing this in my
+                    free time and
                     providing
                     the services to you for free, it is highly appreciated, if you donate. This helps a lot.
                     Thank you.<br><br>
@@ -31,10 +33,10 @@
                         </div>
                     </v-layout>
                 </v-card-title>
-                <v-sheet color="transparent">
-                    <v-sparkline auto-draw :value="[30, 35.5, 41, 45, 41.5, 46, 47]"
-                        :gradient="['#1feaea', '#ffd200', '#f72047']" stroke-linecap="round" smooth>
-                        <template v-slot:label="item">{{ item.value }}kW</template>
+                <v-sheet color="transparent" class="kw-chart-sheet">
+                    <v-sparkline auto-draw :value="kWChartValues" :gradient="['#1feaea', '#ffd200', '#f72047']"
+                        stroke-linecap="round" smooth>
+                        <template v-slot:label="item">{{ item.value }}</template>
                     </v-sparkline>
                 </v-sheet>
                 <v-container>
@@ -132,9 +134,43 @@
                 return this.getSOCFromStats('end') + '%';
             },
             avgKW() {
-                const powers = this.log.stats.filter((stat) => stat.dc_battery_power != null).map((stat) => stat.dc_battery_power);
+                const powers = this.log.stats.filter((stat) => stat.dc_battery_power != null).map((stat) => stat
+                    .dc_battery_power);
 
                 return Math.abs(parseFloat((powers.reduce((a, b) => a + b, 0) / powers.length) || 0).toFixed(2));
+            },
+            kWChartValues() {
+                const powers = this.log.stats.filter((stat) => stat.dc_battery_power != null).map((stat) => {
+                    return {
+                        value: stat.dc_battery_power,
+                        timestamp: stat.timestamp
+                    };
+                });
+                const duration = this.log.end - this.log.start;
+                const part = parseInt(duration / 7);
+                const values = {};
+                const avgValues = [];
+                let currentPart = 0;
+                let currentTimestamp = this.log.end;
+                
+                powers.forEach((power) => {
+                    if (power.timestamp >= currentTimestamp - part) {
+                        if (!values[currentPart]) values[currentPart] = [];
+                        values[currentPart].push(power.value);
+                    } else {
+                        currentPart++;
+                        currentTimestamp -= part;
+                    }
+                });
+
+                Object.keys(values).forEach((line) => {
+                    avgValues.push(Math.abs(parseFloat((values[line].reduce((a, b) => a + b, 0) / values[line]
+                        .length) || 0).toFixed(2)));
+                });
+
+
+                return avgValues;
+
             }
         },
         created() {
@@ -174,5 +210,19 @@
 
     .btn-explain-text {
         text-decoration: underline;
+    }
+
+    .kw-chart-sheet {
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+</style>
+
+<style>
+    .kw-chart-sheet svg {
+        overflow: visible !important;
+    }
+    .kw-chart-sheet svg g {
+        font-size: 12px !important;
     }
 </style>
