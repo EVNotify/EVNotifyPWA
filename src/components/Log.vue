@@ -41,7 +41,7 @@
                 </v-sheet>
                 <v-container>
                     <v-timeline dense clipped>
-                        <v-timeline-item fill-dot class="white--text mb-3" color="indigo" large>
+                        <v-timeline-item fill-dot class="white--text mb-2" color="indigo" large>
                             <template v-slot:icon>
                                 <v-icon color="white" v-if="log.charge">ev_station</v-icon>
                                 <v-icon color="white" v-else>drive_eta</v-icon>
@@ -52,6 +52,11 @@
                                 </template>
                             </v-text-field>
                         </v-timeline-item>
+                        <v-timeline-item class="mb-1">
+                            <v-flex>
+                                <div class="cadivtion" style="color: black">{{ logDate }}</div>
+                            </v-flex>
+                        </v-timeline-item>
                         <v-timeline-item class="mb-3" small color="accent">
                             <v-layout justify-space-between>
                                 <v-flex xs-7>
@@ -61,7 +66,7 @@
                                 <v-flex xs-5 text-xs-right>{{ startTime }}</v-flex>
                             </v-layout>
                         </v-timeline-item>
-                        <v-timeline-item class="mb-3" small color="primary">
+                        <v-timeline-item small color="primary">
                             <v-layout justify-space-between>
                                 <v-flex xs-7>
                                     <v-chip class="white--text ml-0" color="primary" label small>End</v-chip>
@@ -126,6 +131,9 @@
             },
             endTime() {
                 return this.displayTime(this.log.end);
+            },
+            logDate() {
+                return this.$root.MomentJS(new Date(this.log.start * 1000)).format('MMMM Do YYYY');
             },
             startSOC() {
                 return this.getSOCFromStats('start') + '%';
