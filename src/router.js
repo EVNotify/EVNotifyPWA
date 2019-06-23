@@ -22,6 +22,11 @@ export default new Router({
       component: () => import(/* webpackChunkName: "logs" */ './views/Logs.vue')
     },
     {
+      path: '/log',
+      name: 'log',
+      component: () => import(/* webpackChunkName: "log" */ './views/Log.vue')
+    },
+    {
       path: '/settings',
       name: 'settings',
       component: () => import(/* webpackChunkName: "settings" */ './views/Settings.vue')
