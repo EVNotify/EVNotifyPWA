@@ -41,7 +41,8 @@
                     <v-timeline dense clipped>
                         <v-timeline-item fill-dot class="white--text mb-3" color="indigo" large>
                             <template v-slot:icon>
-                                <v-icon color="white">ev_station</v-icon>
+                                <v-icon color="white" v-if="log.charge">ev_station</v-icon>
+                                <v-icon color="white" v-else>drive_eta</v-icon>
                             </template>
                             <v-text-field hide-details flat label="Log title" solo v-model="log.title">
                                 <template v-slot:append>
