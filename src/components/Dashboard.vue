@@ -235,7 +235,7 @@ import { setInterval } from 'timers';
         const lastUpdate = this.getLastUpdate();
 
           if (!lastUpdate) this.updatedTimestamp = 'Never updated';
-          else this.updatedTimestamp = `Updated ${this.$root.MomentJS(new Date(lastUpdate * 1000)).fromNow()}`;
+          else this.updatedTimestamp = `Updated ${this.$root.MomentJS(new Date(lastUpdate * 1000)).fromNow()} [${this.$root.MomentJS(new Date(lastUpdate) * 1000).format('HH:mm:ss')}]`;
       },
       dataOutdated() {
         const now = parseInt(new Date() / 1000);
