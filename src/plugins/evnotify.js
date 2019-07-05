@@ -332,6 +332,25 @@ EVNotify.prototype.getLog = function (id, callback) {
     return self;
 };
 
+EVNotify.prototype.updateLog = function (log, callback) {
+    var self = this;
+
+    // check authentication
+    if (!self.akey || !self.token) {
+        if (typeof callback === 'function') callback(401, null); // missing previous login request
+    } else {
+        sendRequest('put', 'logdetail', {
+            akey: self.akey,
+            token: self.token,
+            log: log
+        }, function (err) {
+            if (typeof callback === 'function') callback(err, !!err);
+        });
+    }
+
+    return self;
+};
+
 /**
  * Function to send out all available / enabled notifications for the AKey
  * @param  {Function} callback  callback function

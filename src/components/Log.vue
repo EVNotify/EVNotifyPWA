@@ -46,9 +46,9 @@
                                 <v-icon color="white" v-if="log.charge">ev_station</v-icon>
                                 <v-icon color="white" v-else>drive_eta</v-icon>
                             </template>
-                            <v-text-field hide-details flat label="Log title" solo v-model="log.title">
+                            <v-text-field hide-details flat label="Log title" solo v-model="log.title" @input="detectChange()">
                                 <template v-slot:append>
-                                    <v-btn class="mx-0" depressed>Save</v-btn>
+                                    <v-btn class="mx-0" :disabled="!saveBtnHighlight" @click="save()" :color="btnHighlightColor">Save</v-btn>
                                 </template>
                             </v-text-field>
                         </v-timeline-item>
@@ -92,10 +92,15 @@
     export default {
         data: () => ({
             id: 0,
+            saveBtnHighlight: false,
+            originalTitle: '',
             log: {},
             showBtnExplaination: false
         }),
         methods: {
+            detectChange() {
+                this.saveBtnHighlight = this.originalTitle !== this.log.title;
+            },
             displayTime(unix) {
                 return this.$root.MomentJS(new Date(unix * 1000)).format('HH:mm:ss');
             },
@@ -123,9 +128,22 @@
                     }
                 }
                 return soc;
+            },
+            save() {
+                const self = this;
+                const log = {...this.log};
+
+                delete log.stats;
+
+                self.$root.EVNotify.updateLog(log, (err) => {
+                    if (!err) self.saveBtnHighlight = false; 
+                });
             }
         },
         computed: {
+            btnHighlightColor() {
+                return this.saveBtnHighlight ? 'primary' : 'light';
+            },
             startTime() {
                 return this.displayTime(this.log.start);
             },
@@ -190,6 +208,7 @@
             this.$root.EVNotify.getLog(this.id, (err, log) => {
                 if (!err && log) {
                     self.log = log;
+                    self.originalTitle = log.title;
                 }
             });
         }
