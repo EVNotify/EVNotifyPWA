@@ -74,34 +74,6 @@
                   <v-list-tile-sub-title>Min / Max / Inlet</v-list-tile-sub-title>
                 </v-list-tile-content>
               </v-list-tile>
-              <v-subheader>Battery health</v-subheader>
-              <v-list-tile v-if="syncData.soc_display">
-                <v-list-tile-action>
-                  <v-icon color="teal">battery_std</v-icon>
-                </v-list-tile-action>
-                <v-list-tile-content>
-                  <v-list-tile-title>{{ syncData.soc_bms || 0 }} %</v-list-tile-title>
-                  <v-list-tile-sub-title>SOC BMS</v-list-tile-sub-title>
-                </v-list-tile-content>
-              </v-list-tile>
-              <v-list-tile>
-                <v-list-tile-action>
-                  <v-icon color="teal">favorite</v-icon>
-                </v-list-tile-action>
-                <v-list-tile-content>
-                  <v-list-tile-title>{{ syncData.soh || 0 }} %</v-list-tile-title>
-                  <v-list-tile-sub-title>State of Health (SOH)</v-list-tile-sub-title>
-                </v-list-tile-content>
-              </v-list-tile>
-              <v-list-tile>
-                <v-list-tile-action>
-                  <v-icon color="teal">flash_auto</v-icon>
-                </v-list-tile-action>
-                <v-list-tile-content>
-                  <v-list-tile-title>{{ syncData.aux_battery_voltage || 0 }} V</v-list-tile-title>
-                  <v-list-tile-sub-title>Aux Battery Voltage</v-list-tile-sub-title>
-                </v-list-tile-content>
-              </v-list-tile>
               <v-subheader>Battery data</v-subheader>
               <v-list-tile>
                 <v-list-tile-action>
@@ -121,13 +93,41 @@
                   <v-list-tile-sub-title>Battery current</v-list-tile-sub-title>
                 </v-list-tile-content>
               </v-list-tile>
-              <v-list-tile class="last-tile">
+              <v-list-tile class="double-line">
                 <v-list-tile-action>
                   <v-icon color="teal">battery_unknown</v-icon>
                 </v-list-tile-action>
                 <v-list-tile-content>
-                  <v-list-tile-title>{{ syncData.cumulative_energy_charged || 0 }} kWh</v-list-tile-title>
-                  <v-list-tile-sub-title>Cumulative energy charged</v-list-tile-sub-title>
+                  <v-list-tile-title>{{ syncData.cumulative_energy_charged || 0 }} kWh / {{ syncData.cumulative_energy_discharged || 0 }} kWh </v-list-tile-title>
+                  <v-list-tile-sub-title>Cumulative energy charged / <br> Cumulative energy discharged</v-list-tile-sub-title>
+                </v-list-tile-content>
+              </v-list-tile>
+              <v-subheader>Battery health</v-subheader>
+              <v-list-tile v-if="syncData.soc_display">
+                <v-list-tile-action>
+                  <v-icon color="teal">battery_std</v-icon>
+                </v-list-tile-action>
+                <v-list-tile-content>
+                  <v-list-tile-title>{{ syncData.soc_bms || 0 }} %</v-list-tile-title>
+                  <v-list-tile-sub-title>SOC BMS</v-list-tile-sub-title>
+                </v-list-tile-content>
+              </v-list-tile>
+              <v-list-tile>
+                <v-list-tile-action>
+                  <v-icon color="teal">favorite</v-icon>
+                </v-list-tile-action>
+                <v-list-tile-content>
+                  <v-list-tile-title>{{ syncData.soh || 0 }} %</v-list-tile-title>
+                  <v-list-tile-sub-title>State of Health (SOH)</v-list-tile-sub-title>
+                </v-list-tile-content>
+              </v-list-tile>
+              <v-list-tile class="last-tile">
+                <v-list-tile-action>
+                  <v-icon color="teal">flash_auto</v-icon>
+                </v-list-tile-action>
+                <v-list-tile-content>
+                  <v-list-tile-title>{{ syncData.aux_battery_voltage || 0 }} V</v-list-tile-title>
+                  <v-list-tile-sub-title>Aux Battery Voltage</v-list-tile-sub-title>
                 </v-list-tile-content>
               </v-list-tile>
             </v-list>
@@ -159,6 +159,7 @@ import { setInterval } from 'timers';
         dc_battery_current: 0,
         dc_battery_voltage: 0,
         cumulative_energy_charged: 0,
+        cumulative_energy_discharged: 0,
         aux_battery_voltage: 0,
         soh: 0
       },
@@ -321,5 +322,8 @@ import { setInterval } from 'timers';
 <style>
   .v-list--two-line .v-list__tile {
     height: 60px;
+  }
+  .v-list--two-line .double-line .v-list__tile {
+    height: 70px;
   }
 </style>
