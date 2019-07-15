@@ -62,8 +62,9 @@
                                 <v-flex xs-7>
                                     <v-chip class="white--text ml-0" color="accent" label small>Start</v-chip>
                                     {{ startSOC }}
+                                    <div class="caption" v-if="startCEC && startCED">{{ startCEC }} kWh (CEC) / <br> {{ startCED }} kWh (CED)</div>
                                 </v-flex>
-                                <v-flex xs-5 text-xs-right>{{ startTime }}</v-flex>
+                                <v-flex xs-5 text-xs-right>{{ startTime }}</v-flex><br><br>
                             </v-layout>
                         </v-timeline-item>
                         <v-timeline-item small color="primary">
@@ -71,6 +72,7 @@
                                 <v-flex xs-7>
                                     <v-chip class="white--text ml-0" color="primary" label small>End</v-chip>
                                     {{ endSOC }}
+                                    <div class="caption" v-if="endCEC && endCED">{{ endCEC }} kWh (CEC) / <br> {{ endCED }} (CED)</div>
                                 </v-flex>
                                 <v-flex xs-5 text-xs-right>{{ endTime }}</v-flex>
                             </v-layout>
@@ -129,6 +131,31 @@
                 }
                 return soc;
             },
+            getCumulativeFromStats(cumulativeType, type) {
+                let cumulative = 0;
+                const stats = this.log.stats;
+
+                if (type === 'start') {
+                    for (let idX = stats.length - 1; idX >= 0; idX--) {
+                        const element = stats[idX];
+
+                        if (element[cumulativeType]) {
+                            cumulative = element[cumulativeType];
+                            break;
+                        }
+                    }
+                } else if (type === 'end') {
+                    for (let idX = 0; idX < stats.length; idX++) {
+                        const element = stats[idX];
+
+                        if (element[cumulativeType]) {
+                            cumulative = element[cumulativeType];
+                            break;
+                        }
+                    }
+                }
+                return cumulative;
+            },
             save() {
                 const self = this;
                 const log = {...this.log};
@@ -158,6 +185,18 @@
             },
             endSOC() {
                 return this.getSOCFromStats('end') + '%';
+            },
+            startCEC() {
+                return this.getCumulativeFromStats('cumulative_energy_charged', 'start');
+            },
+            endCEC() {
+                return this.getCumulativeFromStats('cumulative_energy_charged', 'end');
+            },
+            startCED() {
+                return this.getCumulativeFromStats('cumulative_energy_discharged', 'start');
+            },
+            endCED() {
+                return this.getCumulativeFromStats('cumulative_energy_discharged', 'end');
             },
             avgKW() {
                 const powers = this.log.stats.filter((stat) => stat.dc_battery_power != null).map((stat) => stat
