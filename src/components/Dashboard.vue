@@ -183,7 +183,7 @@ import { setInterval } from 'timers';
       },
       powerAmountColor() {
         if (this.syncData.charging) return 'green';
-        return 'red';
+        return parseFloat(this.syncData.dc_battery_power) <= 0 ? '#448aff' : 'red';
       },
       chargingTimeLeft() {
         return general.chargeTime(this.settings.car, this.syncData.soc_display, this.syncData.soc_bms, this.syncData.dc_battery_power, "timeleft");
