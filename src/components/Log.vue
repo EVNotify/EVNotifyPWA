@@ -64,7 +64,7 @@
                                     {{ startSOC }}
                                     <div class="caption" v-if="startCEC && startCED">{{ startCEC }} kWh (CEC) / <br> {{ startCED }} kWh (CED)</div>
                                 </v-flex>
-                                <v-flex xs-5 text-xs-right>{{ startTime }}</v-flex><br><br>
+                                <v-flex xs-5 text-xs-right>{{ startTime }}</v-flex>
                             </v-layout>
                         </v-timeline-item>
                         <v-timeline-item small color="primary">
