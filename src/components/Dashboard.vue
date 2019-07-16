@@ -1,7 +1,7 @@
 <template>
   <v-layout>
     <v-flex xs12 sm6 offset-sm3>
-      <v-card>
+      <v-card class="main-card">
         <v-card-title primary-title>
           <div class="upper-part">
             <div class="progress-cycle-container left">
@@ -273,6 +273,11 @@ import { setInterval } from 'timers';
 
   .layout {
     width: 100%;
+    min-height: 100vh;
+  }
+
+  .v-card.main-card {
+    height: 100%;
   }
 
   .upper-part,
