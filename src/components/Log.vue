@@ -234,7 +234,7 @@
                 });
 
 
-                return avgValues;
+                return avgValues.reverse();
 
             }
         },
