@@ -1,5 +1,17 @@
 <template>
   <v-layout>
+    <v-dialog v-model="showBtnNotImplementedExplaination" max-width="290" persistent scrollable>
+      <v-card>
+        <v-card-title class="headline">This Value is empty</v-card-title>
+        <v-card-text>
+          For users with EvNotiPi / Plug'n'Play devices this value is not implemented at the moment. But it will follow soon, don´t worry.<br><br>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="green darken-1" flat @click="showBtnNotImplementedExplaination = false">Close</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
     <v-flex xs12 sm6 offset-sm3>
       <v-card class="main-card">
         <v-card-title primary-title>
@@ -101,6 +113,11 @@
                   <v-list-tile-title>{{ syncData.cumulative_energy_charged || 0 }} kWh / {{ syncData.cumulative_energy_discharged || 0 }} kWh </v-list-tile-title>
                   <v-list-tile-sub-title>Cumulative energy charged / <br> Cumulative energy discharged</v-list-tile-sub-title>
                 </v-list-tile-content>
+                <v-list-tile-action>
+                  <v-btn icon ripple @click="showBtnNotImplementedExplaination = true">
+                    <v-icon color="grey lighten-1">info</v-icon>
+                  </v-btn>
+                </v-list-tile-action>
               </v-list-tile>
               <v-subheader>Battery health</v-subheader>
               <v-list-tile v-if="syncData.soc_display">
@@ -167,7 +184,8 @@ import { setInterval } from 'timers';
       updatedTimestamp: '',
       dataOutdatedMessage: '',
       dataOutdatedMessageTimestamp: '',
-      settings: storage.getValue('settings', {})
+      settings: storage.getValue('settings', {}),
+      showBtnNotImplementedExplaination: false
     }),
     computed: {
       cycleColor() {
