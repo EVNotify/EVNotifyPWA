@@ -2,7 +2,7 @@
   <v-layout>
     <v-dialog v-model="showBtnNotImplementedExplaination" max-width="290" persistent scrollable>
       <v-card>
-        <v-card-title class="headline">This Value is empty</v-card-title>
+        <v-card-title class="headline">This Value is empty?</v-card-title>
         <v-card-text>
           For users with EvNotiPi / Plug'n'Play devices this value is not implemented at the moment. But it will follow soon, don´t worry.<br><br>
         </v-card-text>
