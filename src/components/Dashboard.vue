@@ -93,7 +93,7 @@
                   <v-list-tile-sub-title>Battery current</v-list-tile-sub-title>
                 </v-list-tile-content>
               </v-list-tile>
-              <v-list-tile class="double-line" v-if="cumulative_energy_charged > 0 || cumulative_energy_charged > 0">
+              <v-list-tile class="double-line" v-if="syncData.cumulative_energy_charged > 0 || syncData.cumulative_energy_discharged > 0">
                 <v-list-tile-action>
                   <v-icon color="teal">battery_unknown</v-icon>
                 </v-list-tile-action>
