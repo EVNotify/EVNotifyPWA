@@ -1,5 +1,18 @@
 <template>
   <v-layout>
+    <v-dialog v-model="showSOCExplaination" max-width="290" persistent scrollable>
+      <v-card>
+        <v-card-title class="headline">State of charge</v-card-title>
+        <v-card-text>
+          Display: {{ syncData.soc_display }} % (displayed value in car) <br/>
+          BMS: {{ syncData.soc_bms }} % (calculated value by system)
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="green darken-1" flat @click="showSOCExplaination = false">Close</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
     <v-flex xs12 sm6 offset-sm3>
       <v-card class="main-card">
         <v-card-title primary-title>
@@ -12,9 +25,10 @@
                   <v-icon color="primary" v-if="syncData.charging">flash_on</v-icon>
                 </div>
               </v-progress-circular>
-              <p class="caption progress-cycle-text" v-if="syncData.soc_display">SOC Display</p>
-              <p class="caption progress-cycle-text" v-else>SOC BMS</p>
             </div>
+            <v-btn class="socexplainationmodal" icon ripple @click="showSOCExplaination = true">
+              <v-icon color="grey lighten-1">info</v-icon>
+            </v-btn>
             <div class="progress-cycle-container right">
               <v-list>
                 <v-list-tile>
@@ -103,15 +117,6 @@
                 </v-list-tile-content>
               </v-list-tile>
               <v-subheader>Battery health</v-subheader>
-              <v-list-tile v-if="syncData.soc_display">
-                <v-list-tile-action>
-                  <v-icon color="teal">battery_std</v-icon>
-                </v-list-tile-action>
-                <v-list-tile-content>
-                  <v-list-tile-title>{{ syncData.soc_bms || 0 }} %</v-list-tile-title>
-                  <v-list-tile-sub-title>SOC BMS</v-list-tile-sub-title>
-                </v-list-tile-content>
-              </v-list-tile>
               <v-list-tile>
                 <v-list-tile-action>
                   <v-icon color="teal">favorite</v-icon>
@@ -167,7 +172,8 @@ import { setInterval } from 'timers';
       updatedTimestamp: '',
       dataOutdatedMessage: '',
       dataOutdatedMessageTimestamp: '',
-      settings: storage.getValue('settings', {})
+      settings: storage.getValue('settings', {}),
+      showSOCExplaination: false
     }),
     computed: {
       cycleColor() {
@@ -321,6 +327,10 @@ import { setInterval } from 'timers';
   }
   .v-subheader {
     height: 20px;
+  }
+  .socexplainationmodal {
+    position: absolute;
+    margin-left: -5px;
   }
 </style>
 
