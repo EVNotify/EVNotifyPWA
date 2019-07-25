@@ -55,6 +55,11 @@
                         <v-timeline-item class="mb-1">
                             <v-flex>
                                 <div class="cadivtion" style="color: black">{{ logDate }}</div>
+                                <div v-if="startCEC || startCED">
+                                    <div class="caption" v-if="log.charge">charged: {{ (endCEC - startCEC || 0).toFixed(1) }} kWh</div>
+                                    <div class="caption" v-else>consumed: {{ (endCED - startCED || 0).toFixed(1)}} kWh<br>recuperated: {{ (endCEC - startCEC || 0).toFixed(1) }} kWh</div>
+                                </div>
+                                <div class="caption" v-if="!log.charge">Ø {{ avgSpeed }} km/h | {{ distance }} km driven</div>
                             </v-flex>
                         </v-timeline-item>
                         <v-timeline-item class="mb-3" small color="accent">
@@ -67,12 +72,12 @@
                                 <v-flex xs-5 text-xs-right>{{ startTime }}</v-flex>
                             </v-layout>
                         </v-timeline-item>
-                        <v-timeline-item small color="primary">
+                        <v-timeline-item small color="primary" class="last-timeline-item">
                             <v-layout justify-space-between>
                                 <v-flex xs-7>
                                     <v-chip class="white--text ml-0" color="primary" label small>End</v-chip>
                                     {{ endSOC }}
-                                    <div class="caption" v-if="endCEC && endCED">{{ endCEC }} kWh (CEC) / <br> {{ endCED }} (CED)</div>
+                                    <div class="caption" v-if="endCEC || endCED">{{ endCEC }} kWh (CEC) / <br> {{ endCED }} kWh (CED)</div>
                                 </v-flex>
                                 <v-flex xs-5 text-xs-right>{{ endTime }}</v-flex>
                             </v-layout>
@@ -199,10 +204,19 @@
                 return this.getCumulativeFromStats('cumulative_energy_discharged', 'end');
             },
             avgKW() {
-                const powers = this.log.stats.filter((stat) => stat.dc_battery_power != null).map((stat) => stat
-                    .dc_battery_power);
+                const powers = this.log.stats.filter((stat) => stat.dc_battery_power != null)
+                    .map((stat) => stat.dc_battery_power);
 
                 return Math.abs(parseFloat((powers.reduce((a, b) => a + b, 0) / powers.length) || 0).toFixed(2));
+            },
+            avgSpeed() {
+                const speeds = this.log.stats.filter((stat) => stat.gps_speed != null)
+                    .map((stat) => stat.gps_speed);
+
+                return Math.abs((parseFloat((speeds.reduce((a, b) => a + b, 0) / speeds.length) || 0) * 3.6).toFixed(2));
+            },
+            distance() {
+                return (this.avgSpeed * (((this.log.end - this.log.start) / 3600)) || 0).toFixed(2);
             },
             kWChartValues() {
                 const powers = this.log.stats.filter((stat) => stat.dc_battery_power != null).map((stat) => {
@@ -281,6 +295,10 @@
     .kw-chart-sheet {
         padding-left: 16px;
         padding-right: 16px;
+    }
+
+    .v-timeline-item.last-timeline-item {
+        padding-bottom: 0;
     }
 </style>
 
