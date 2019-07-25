@@ -62,7 +62,7 @@
                                 <v-flex xs-7>
                                     <v-chip class="white--text ml-0" color="accent" label small>Start</v-chip>
                                     {{ startSOC }}
-                                    <div class="caption" v-if="startCEC && startCED">{{ startCEC }} kWh (CEC) / <br> {{ startCED }} kWh (CED)</div>
+                                    <div class="caption" v-if="startCEC || startCED">{{ startCEC }} kWh (CEC) / <br> {{ startCED }} kWh (CED)</div>
                                 </v-flex>
                                 <v-flex xs-5 text-xs-right>{{ startTime }}</v-flex>
                             </v-layout>
