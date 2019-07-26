@@ -61,7 +61,7 @@
             </div>
           </div>
           <small class="updated-timestamp" v-if="!dataOutdated()">{{ updatedTimestamp }}</small>
-          <v-alert type="warning" :value="dataOutdated()" transition="scale-transition">
+          <v-alert class="mt-2" type="warning" :value="dataOutdated()" transition="scale-transition">
             {{ dataOutdatedMessage }}<br>
             <small>{{ dataOutdatedMessageTimestamp }}</small>
           </v-alert>
@@ -334,6 +334,7 @@ import { setInterval } from 'timers';
 <style scoped>
   .v-alert {
     width: 100%;
+    padding:5px;
   }
 
   .layout {
