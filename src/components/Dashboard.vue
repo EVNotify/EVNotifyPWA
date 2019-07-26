@@ -126,7 +126,7 @@
                   <v-list-tile-sub-title>State of Health (SOH)</v-list-tile-sub-title>
                 </v-list-tile-content>
               </v-list-tile>
-              <v-list-tile class="last-tile">
+              <v-list-tile>
                 <v-list-tile-action>
                   <v-icon color="teal">flash_auto</v-icon>
                 </v-list-tile-action>
@@ -135,6 +135,27 @@
                   <v-list-tile-sub-title>Aux Battery Voltage</v-list-tile-sub-title>
                 </v-list-tile-content>
               </v-list-tile>
+            </v-list>
+            <v-divider class="mt-1 mb-3"></v-divider>
+            <v-list two-line subheader v-if="loaded && Object.keys(logs).length">
+              <v-subheader v-if="loaded && Object.keys(logs).length">Latest log</v-subheader>
+              <div v-for="(month, index) in logs" :key="index">
+                <v-list-tile v-for="log in logs[index].slice(0,1)" :key="log.id" avatar @click="$router.push({name: 'log', query: {id: log.id}})">
+                  <v-list-tile-avatar>
+                    <v-icon class="teal lighten-1 white--text">{{ convertIcon(log.charge) }}</v-icon>
+                  </v-list-tile-avatar>
+                  <v-list-tile-content>
+                    <v-list-tile-title>{{ log.title }}</v-list-tile-title>
+                    <v-list-tile-sub-title>{{ convertDates(log.start, log.end) }}</v-list-tile-sub-title>
+                  </v-list-tile-content>
+                  <v-list-tile-action>
+                    <v-btn icon ripple @click="$router.push({name: 'log', query: {id: log.id}})">
+                      <v-icon color="grey lighten-1">info</v-icon>
+                    </v-btn>
+                  </v-list-tile-action>
+                </v-list-tile>
+                <div class="last-tile"></div>
+              </div>
             </v-list>
           </div>
         </v-card-title>
@@ -173,7 +194,9 @@ import { setInterval } from 'timers';
       dataOutdatedMessage: '',
       dataOutdatedMessageTimestamp: '',
       settings: storage.getValue('settings', {}),
-      showSOCExplaination: false
+      showSOCExplaination: false,
+      logs: {},
+      loaded: false
     }),
     computed: {
       cycleColor() {
@@ -259,12 +282,48 @@ import { setInterval } from 'timers';
       },
       isSupportedCar() {
         return cars[this.settings.car] != null;
+      },
+      convertSubHeader(date) {
+        return this.$root.MomentJS(date.split('_').reverse()).format('MMMM YYYY');
+      },
+      convertIcon(charge) {
+        return charge ? 'ev_station' : 'directions_car';
+      },
+      convertDates(start, end) {
+        start = new Date(start * 1000);
+        end = new Date(end * 1000);
+
+        return `${this.$root.MomentJS(end).format('MMMM Do YYYY')} ${this.$root.MomentJS(start).format('HH:mm')}-${this.$root.MomentJS(end).format('HH:mm')}`
       }
     },
     mounted() {
       if (!storage.getValue('user')) return;
       this.fetchInterval = setInterval(this.fetchData, 10000);
       this.fetchData();
+
+      var self = this;
+
+      self.$root.EVNotify.getLogs(0, (err, driveLogs) => {
+        if (!err && driveLogs) {
+          self.$root.EVNotify.getLogs(1, (err, chargeLogs) => {
+            if (!err && chargeLogs) {
+              const combinedLogs = chargeLogs.concat(driveLogs)
+                      .sort((a, b) => b.end - a.end);
+              const logs = {};
+
+              combinedLogs.forEach((log) => {
+                const date = new Date(log.end * 1000);
+                const index = `${date.getMonth()}_${date.getFullYear()}`;
+
+                if (!logs[index]) logs[index] = [];
+                logs[index].push(log);
+              });
+              self.loaded = true;
+              self.logs = logs;
+            }
+          });
+        }
+      });
     },
     beforeDestroy() {
       clearInterval(this.fetchInterval);
