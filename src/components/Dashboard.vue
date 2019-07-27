@@ -16,50 +16,54 @@
     <v-flex xs12 sm6 offset-sm3>
       <v-card class="main-card">
         <v-card-title primary-title>
-          <div class="upper-part">
-            <div class="progress-cycle-container left">
-              <v-progress-circular :rotate="-90" :size="100" :width="15"
-                :value="syncData.soc_display || syncData.soc_bms" :color="cycleColor">
-                <div class="progress-cycle-text-container">
-                  <p>{{ syncData.soc_display || syncData.soc_bms }} %</p>
-                  <v-icon color="primary" v-if="syncData.charging">flash_on</v-icon>
-                </div>
-              </v-progress-circular>
-            </div>
-            <v-btn class="socexplainationmodal" icon ripple @click="showSOCExplaination = true">
-              <v-icon color="grey lighten-1">info</v-icon>
-            </v-btn>
-            <div class="progress-cycle-container right">
-              <v-list>
-                <v-list-tile>
-                  <v-list-tile-action>
-                    <v-icon color="teal">flash_on</v-icon>
-                  </v-list-tile-action>
-                  <v-list-tile-content>
-                    <v-list-tile-title :style="{color: powerAmountColor}">{{ powerAmount }} kW</v-list-tile-title>
-                    <span v-if="syncData.charging" class="font-weight-light font-italic">{{ rangePerMinute }} km / min</span>
-                  </v-list-tile-content>
-                </v-list-tile>
-                <v-list-tile v-if="isSupportedCar()">
-                  <v-list-tile-action>
-                    <v-icon color="teal">drive_eta</v-icon>
-                  </v-list-tile-action>
-                  <v-list-tile-content>
-                    <v-list-tile-title :style="{color: currentRangeColor}">{{ currentRange }} / {{ totalRange }} km</v-list-tile-title>
-                    <span class="font-weight-light font-italic">{{ settings.consumption || 0 }} kWh / 100 km</span>
-                  </v-list-tile-content>
-                </v-list-tile>
-                <v-list-tile v-if="syncData.charging && isSupportedCar()">
-                  <v-list-tile-action>
-                    <v-icon color="teal">schedule</v-icon>
-                  </v-list-tile-action>
-                  <v-list-tile-content>
-                    <v-list-tile-title>{{ chargingTimeLeft }} h ({{ finishTime }})</v-list-tile-title>
-                  </v-list-tile-content>
-                </v-list-tile>
-              </v-list>
-            </div>
-          </div>
+          <v-layout class="upper-part">
+            <v-flex xs5>
+              <div class="progress-cycle-container left">
+                <v-progress-circular :rotate="-90" :size="100" :width="15"
+                  :value="syncData.soc_display || syncData.soc_bms" :color="cycleColor">
+                  <div class="progress-cycle-text-container">
+                    <p>{{ syncData.soc_display || syncData.soc_bms }} %</p>
+                    <v-icon color="primary" v-if="syncData.charging">flash_on</v-icon>
+                  </div>
+                </v-progress-circular>
+                <v-btn class="socexplainationmodal" icon ripple @click="showSOCExplaination = true">
+                  <v-icon color="grey lighten-1">info</v-icon>
+                </v-btn>
+              </div>
+            </v-flex>
+            <v-flex xs7>
+              <div class="progress-cycle-container">
+                <v-list>
+                  <v-list-tile>
+                    <v-list-tile-action>
+                      <v-icon color="teal">flash_on</v-icon>
+                    </v-list-tile-action>
+                    <v-list-tile-content>
+                      <v-list-tile-title :style="{color: powerAmountColor}">{{ powerAmount }} kW</v-list-tile-title>
+                      <span v-if="syncData.charging" class="font-weight-light font-italic">{{ rangePerMinute }} km / min</span>
+                    </v-list-tile-content>
+                  </v-list-tile>
+                  <v-list-tile v-if="isSupportedCar()">
+                    <v-list-tile-action>
+                      <v-icon color="teal">drive_eta</v-icon>
+                    </v-list-tile-action>
+                    <v-list-tile-content>
+                      <v-list-tile-title :style="{color: currentRangeColor}">{{ currentRange }} / {{ totalRange }} km</v-list-tile-title>
+                      <span class="font-weight-light font-italic">{{ settings.consumption || 0 }} kWh / 100 km</span>
+                    </v-list-tile-content>
+                  </v-list-tile>
+                  <v-list-tile v-if="syncData.charging && isSupportedCar()">
+                    <v-list-tile-action>
+                      <v-icon color="teal">schedule</v-icon>
+                    </v-list-tile-action>
+                    <v-list-tile-content>
+                      <v-list-tile-title>{{ chargingTimeLeft }} h ({{ finishTime }})</v-list-tile-title>
+                    </v-list-tile-content>
+                  </v-list-tile>
+                </v-list>
+              </div>
+            </v-flex>
+          </v-layout>
           <small class="updated-timestamp" v-if="!dataOutdated()">{{ updatedTimestamp }}</small>
           <v-alert type="warning" :value="dataOutdated()" transition="scale-transition">
             {{ dataOutdatedMessage }}<br>
@@ -147,7 +151,6 @@
   import storage from '../utils/storage';
   import cars from '../utils/cars';
   import general from '../utils/general';
-import { setInterval } from 'timers';
 
   export default {
     data: () => ({
@@ -277,11 +280,6 @@ import { setInterval } from 'timers';
     width: 100%;
   }
 
-  .layout {
-    width: 100%;
-    min-height: 100vh;
-  }
-
   .v-card.main-card {
     height: 100%;
   }
@@ -297,11 +295,6 @@ import { setInterval } from 'timers';
 
   .progress-cycle-container.left {
     padding-top: 16px;
-    float: left;
-  }
-
-  .progress-cycle-container.right {
-    float: right;
   }
 
   .progress-cycle-text {
@@ -331,6 +324,10 @@ import { setInterval } from 'timers';
   .socexplainationmodal {
     position: absolute;
     margin-left: -5px;
+    margin-top: -10px;
+  }
+  .v-list__tile__action {
+    min-width: 35px;
   }
 </style>
 
