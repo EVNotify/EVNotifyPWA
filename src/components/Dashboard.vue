@@ -151,7 +151,6 @@
   import storage from '../utils/storage';
   import cars from '../utils/cars';
   import general from '../utils/general';
-import { setInterval } from 'timers';
 
   export default {
     data: () => ({
