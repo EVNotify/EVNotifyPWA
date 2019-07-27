@@ -20,7 +20,7 @@
             <v-flex xs5>
               <div class="progress-cycle-container left">
                 <v-progress-circular :rotate="-90" :size="100" :width="15"
-                                     :value="syncData.soc_display || syncData.soc_bms" :color="cycleColor">
+                  :value="syncData.soc_display || syncData.soc_bms" :color="cycleColor">
                   <div class="progress-cycle-text-container">
                     <p>{{ syncData.soc_display || syncData.soc_bms }} %</p>
                     <v-icon color="primary" v-if="syncData.charging">flash_on</v-icon>
