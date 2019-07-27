@@ -93,31 +93,37 @@
                 </v-list-tile-content>
               </v-list-tile>
               <v-subheader>Battery data</v-subheader>
-              <v-list-tile>
-                <v-list-tile-action>
-                  <v-icon color="teal">battery_charging_full</v-icon>
-                </v-list-tile-action>
-                <v-list-tile-content>
-                  <v-list-tile-title>{{ syncData.dc_battery_voltage || 0 }} V</v-list-tile-title>
-                  <v-list-tile-sub-title>Battery voltage</v-list-tile-sub-title>
-                </v-list-tile-content>
-              </v-list-tile>
-              <v-list-tile>
-                <v-list-tile-action>
-                  <v-icon color="teal">power</v-icon>
-                </v-list-tile-action>
-                <v-list-tile-content>
-                  <v-list-tile-title>{{ syncData.dc_battery_current || 0 }} A</v-list-tile-title>
-                  <v-list-tile-sub-title>Battery current</v-list-tile-sub-title>
-                </v-list-tile-content>
-              </v-list-tile>
+              <v-layout row wrap>
+                <v-flex xs6>
+                  <v-list-tile>
+                    <v-list-tile-action>
+                      <v-icon color="teal">battery_charging_full</v-icon>
+                    </v-list-tile-action>
+                    <v-list-tile-content>
+                      <v-list-tile-title>{{ syncData.dc_battery_voltage || 0 }} V</v-list-tile-title>
+                      <v-list-tile-sub-title>Voltage</v-list-tile-sub-title>
+                    </v-list-tile-content>
+                  </v-list-tile>
+                </v-flex>
+                <v-flex xs6>
+                  <v-list-tile>
+                    <v-list-tile-action>
+                      <v-icon color="teal">power</v-icon>
+                    </v-list-tile-action>
+                    <v-list-tile-content>
+                      <v-list-tile-title>{{ syncData.dc_battery_current || 0 }} A</v-list-tile-title>
+                      <v-list-tile-sub-title>Current</v-list-tile-sub-title>
+                    </v-list-tile-content>
+                  </v-list-tile>
+                </v-flex>
+              </v-layout>
               <v-list-tile class="double-line" v-if="syncData.cumulative_energy_charged > 0 || syncData.cumulative_energy_discharged > 0">
                 <v-list-tile-action>
                   <v-icon color="teal">battery_unknown</v-icon>
                 </v-list-tile-action>
                 <v-list-tile-content>
                   <v-list-tile-title>{{ syncData.cumulative_energy_charged || 0 }} kWh / {{ syncData.cumulative_energy_discharged || 0 }} kWh </v-list-tile-title>
-                  <v-list-tile-sub-title>Cumulative energy charged / <br> Cumulative energy discharged</v-list-tile-sub-title>
+                  <v-list-tile-sub-title>Charged / discharged all time</v-list-tile-sub-title>
                 </v-list-tile-content>
               </v-list-tile>
               <v-subheader>Battery health</v-subheader>
@@ -325,6 +331,9 @@
     position: absolute;
     margin-left: -5px;
     margin-top: -10px;
+  }
+  .v-list__tile__action {
+    min-width: 35px;
   }
   .v-list__tile__action {
     min-width: 35px;
