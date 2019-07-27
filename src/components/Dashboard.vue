@@ -92,7 +92,7 @@
                   <v-list-tile-sub-title>Min / Max / Inlet</v-list-tile-sub-title>
                 </v-list-tile-content>
               </v-list-tile>
-              <v-subheader>Battery data</v-subheader>
+              <v-subheader class="mt-2">Battery data</v-subheader>
               <v-layout row wrap>
                 <v-flex xs6>
                   <v-list-tile>
@@ -126,7 +126,7 @@
                   <v-list-tile-sub-title>Charged / discharged all time</v-list-tile-sub-title>
                 </v-list-tile-content>
               </v-list-tile>
-              <v-subheader>Battery health</v-subheader>
+              <v-subheader class="mt-2">Battery health</v-subheader>
               <v-layout row wrap>
                 <v-flex xs6>
                   <v-list-tile>
