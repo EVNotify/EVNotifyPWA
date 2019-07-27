@@ -1,5 +1,5 @@
 <template>
-  <v-layout>
+  <v-layout class="full-height">
     <v-dialog v-model="showSOCExplaination" max-width="290" persistent scrollable>
       <v-card>
         <v-card-title class="headline">State of charge</v-card-title>
@@ -352,5 +352,8 @@
   }
   .v-list--two-line .double-line .v-list__tile {
     height: 70px;
+  }
+  .full-height {
+    min-height: 100vh;
   }
 </style>
