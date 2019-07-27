@@ -289,6 +289,10 @@
                 }, {
                     label: 'Battery temperature (Max)',
                     key: 'battery_max_temperature',
+                    color: 'red'
+                }, {
+                    label: 'Battery temperature (Inlet)',
+                    key: 'battery_inlet_temperature',
                     color: 'orange'
                 }, {
                     label: 'Speed (GPS)',
