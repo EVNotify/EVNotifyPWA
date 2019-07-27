@@ -22,7 +22,7 @@
             </v-card>
         </v-dialog>
         <v-flex xs12 sm6 offset-sm3>
-            <v-card class="mx-auto" v-if="log.id">
+            <v-card class="mx-auto" v-if="log.id" v-show="!showChart">
                 <v-card-title>
                     <v-icon class="mr-5" size="64" @click="$router.push('/logs')">chevron_left</v-icon>
                     <v-layout column align-start class="average-container-text">
@@ -86,24 +86,36 @@
                 </v-container>
                 <v-container class="btn-container">
                     <v-btn small color="primary">Show Map</v-btn>
-                    <v-btn small color="primary">Show Chart</v-btn>
+                    <v-btn small color="primary" @click="showChart = true">Show Chart</v-btn>
                 </v-container>
                 <p class="caption text-xs-center font-weight-light font-italic btn-explain-text"
                     @click="showBtnExplaination = true">Why don't I see this immediately?</p>
+            </v-card>
+            <v-card v-show="showChart">
+                <v-container class="btn-container">
+                    <v-btn small color="primary" @click="showChart = false">Show summary</v-btn>
+                </v-container>
+                <chart-line ref="chart"></chart-line>
             </v-card>
         </v-flex>
     </v-layout>
 </template>
 
 <script>
+    import { Line } from 'vue-chartjs';
+
     export default {
         data: () => ({
             id: 0,
             saveBtnHighlight: false,
             originalTitle: '',
             log: {},
+            showChart: false,
             showBtnExplaination: false
         }),
+        components: {
+            'chart-line': Line
+        },
         methods: {
             detectChange() {
                 this.saveBtnHighlight = this.originalTitle !== this.log.title;
@@ -250,6 +262,56 @@
 
                 return avgValues.reverse();
 
+            },
+            chartData() {
+                const self = this;
+                const stats = [...self.log.stats].sort((a, b) => a.timestamp - b.timestamp);
+                const dataObj = {
+                    labels: stats.map((stat) => self.$root.MomentJS(stat.timestamp * 1000).format('HH:mm:ss')),
+                    datasets: []
+                };
+                const values = [{
+                    label: 'SOC Display',
+                    key: 'soc_display',
+                    color: 'blue'
+                }, {
+                    label: 'SOC BMS',
+                    key: 'soc_bms',
+                    color: 'cyan'
+                }, {
+                    label: 'DC Battery Power',
+                    key: 'dc_battery_power',
+                    color: 'darkgreen'
+                }, {
+                    label: 'Battery temperature (Min)',
+                    key: 'battery_min_temperature',
+                    color: 'yellow'
+                }, {
+                    label: 'Battery temperature (Max)',
+                    key: 'battery_max_temperature',
+                    color: 'orange'
+                }, {
+                    label: 'Speed (GPS)',
+                    key: 'gps_speed',
+                    color: 'purple'
+                }];
+
+                values.forEach((obj) => {
+                    dataObj.datasets.push({
+                        label: obj.label,
+                        data: stats.map((stat) => obj.key === 'gps_speed' ? stat[obj.key] * 3.6 || null : stat[obj.key]),
+                        borderWidth: 0,
+                        lineTension: 0,
+                        fill: false,
+                        spanGaps: true,
+                        pointBorderWidth: 1,
+                        pointStyle: 'line',
+                        borderJoinStyle: 'round',
+                        backgroundColor: obj.color,
+                        borderColor: obj.color
+                    })
+                });
+                return dataObj;
             }
         },
         created() {
@@ -262,6 +324,16 @@
                 if (!err && log) {
                     self.log = log;
                     self.originalTitle = log.title;
+                    self.$refs.chart.renderChart(self.chartData, {
+                        scales: {
+                            xAxes: [{
+                                ticks: {
+                                    autoSkip: true,
+                                    maxTicksLimit: 15
+                                }
+                            }]   
+                        }
+                    });
                 }
             });
         }
