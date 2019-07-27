@@ -294,7 +294,7 @@ import { setInterval } from 'timers';
     padding: 0 16px;
   }
 
-  .progress-cycle-container.left{
+  .progress-cycle-container.left {
     padding-top: 16px;
   }
 
