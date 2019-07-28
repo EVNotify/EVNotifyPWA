@@ -330,7 +330,7 @@ import { setTimeout } from 'timers';
             },
             mapData() {
                 const self = this;
-                const stats = [...self.log.stats].sort((a, b) => a.timestamp - b.timestamp);
+                const stats = JSON.parse(JSON.stringify(self.log.stats)).sort((a, b) => a.timestamp - b.timestamp);
 
                 return stats.filter((stat) => stat.latitude != null && stat.longitude != null).map((stat) => ({
                     lat: stat.latitude,
@@ -349,38 +349,46 @@ import { setTimeout } from 'timers';
                     self.log = log;
                     self.originalTitle = log.title;
                     if (!self.$refs.chart) return;
-                    self.$refs.chart.renderChart(self.chartData, {
-                        scales: {
-                            xAxes: [{
-                                ticks: {
-                                    autoSkip: true,
-                                    maxTicksLimit: 15
+                    setTimeout(() => {
+                        self.$nextTick(() => {
+                            self.$refs.chart.renderChart(self.chartData, {
+                                scales: {
+                                    xAxes: [{
+                                        ticks: {
+                                            autoSkip: true,
+                                            maxTicksLimit: 15
+                                        }
+                                    }]   
                                 }
-                            }]   
-                        }
+                            });
+                        });
                     });
                     if (!self.$refs.map) return;
-                    self.$nextTick(() => {
-                        // eslint-disable-next-line
-                        const map = L.map('map');
-                        const data = self.mapData;
-
-                        console.log(data.length);
-                        if (!data.length) return self.validCoords = false;
-                        self.validCoords = true;
-                        // eslint-disable-next-line
-                        L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}', {
-                            attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
-                            maxZoom: 18,
-                            id: 'mapbox.streets',
-                            accessToken: 'pk.eyJ1IjoiZ3BsYXk5NyIsImEiOiJjanltdGViajAwa3piM25xa3FkMXA2YndqIn0.xlIf98rUtbTPNYNAjMvJNg'
-                        }).addTo(map);
-                        setTimeout(() => {
+                    setTimeout(() => {
+                        self.$nextTick(() => {
                             // eslint-disable-next-line
-                            map.fitBounds(L.polyline(data, {
-                                color: '#4589fc'
-                            }).addTo(map).getBounds());
-                        }, 2000);
+                            const map = L.map('map');
+                            const data = self.mapData;
+
+                            if (!data.length) return self.validCoords = false;
+                            self.validCoords = true;
+                            setTimeout(() => {
+                                // eslint-disable-next-line
+                                map.fitBounds(L.polyline(data, {
+                                    color: '#4589fc'
+                                }).addTo(map).getBounds());
+                                // eslint-disable-next-line
+                                L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}', {
+                                    attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+                                    maxZoom: 18,
+                                    id: 'mapbox.streets',
+                                    accessToken: 'pk.eyJ1IjoiZ3BsYXk5NyIsImEiOiJjanltdGViajAwa3piM25xa3FkMXA2YndqIn0.xlIf98rUtbTPNYNAjMvJNg'
+                                }).addTo(map);
+                                setTimeout(() => {
+                                    map.invalidateSize();
+                                }, 1000);
+                            }, 1000);
+                        });
                     });
                 }
             });
