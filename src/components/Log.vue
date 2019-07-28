@@ -22,7 +22,7 @@
             </v-card>
         </v-dialog>
         <v-flex xs12 sm6 offset-sm3>
-            <v-card class="mx-auto" v-if="log.id" v-show="!showChart">
+            <v-card class="mx-auto" v-if="log.id" v-show="!showChart && !showMap">
                 <v-card-title>
                     <v-icon class="mr-5" size="64" @click="$router.push('/logs')">chevron_left</v-icon>
                     <v-layout column align-start class="average-container-text">
@@ -85,7 +85,7 @@
                     </v-timeline>
                 </v-container>
                 <v-container class="btn-container">
-                    <v-btn small color="primary">Show Map</v-btn>
+                    <v-btn small color="primary" @click="showMap = true" :disabled="!validCoords">Show Map</v-btn>
                     <v-btn small color="primary" @click="showChart = true">Show Chart</v-btn>
                 </v-container>
                 <p class="caption text-xs-center font-weight-light font-italic btn-explain-text"
@@ -97,12 +97,21 @@
                 </v-container>
                 <chart-line ref="chart"></chart-line>
             </v-card>
+            <v-card v-show="showMap">
+                <v-container class="btn-container">
+                    <v-btn class="primary" @click="showMap = false">Show summary</v-btn>
+                </v-container>
+                <div>
+                    <div id="map" ref="map"></div>
+                </div>
+            </v-card>
         </v-flex>
     </v-layout>
 </template>
 
 <script>
     import { Line } from 'vue-chartjs';
+import { setTimeout } from 'timers';
 
     export default {
         data: () => ({
@@ -110,7 +119,9 @@
             saveBtnHighlight: false,
             originalTitle: '',
             log: {},
+            showMap: false,
             showChart: false,
+            validCoords: false,
             showBtnExplaination: false
         }),
         components: {
@@ -316,6 +327,15 @@
                     })
                 });
                 return dataObj;
+            },
+            mapData() {
+                const self = this;
+                const stats = [...self.log.stats].sort((a, b) => a.timestamp - b.timestamp);
+
+                return stats.filter((stat) => stat.latitude != null && stat.longitude != null).map((stat) => ({
+                    lat: stat.latitude,
+                    lng: stat.longitude
+                }));
             }
         },
         created() {
@@ -328,6 +348,7 @@
                 if (!err && log) {
                     self.log = log;
                     self.originalTitle = log.title;
+                    if (!self.$refs.chart) return;
                     self.$refs.chart.renderChart(self.chartData, {
                         scales: {
                             xAxes: [{
@@ -337,6 +358,29 @@
                                 }
                             }]   
                         }
+                    });
+                    if (!self.$refs.map) return;
+                    self.$nextTick(() => {
+                        // eslint-disable-next-line
+                        const map = L.map('map');
+                        const data = self.mapData;
+
+                        console.log(data.length);
+                        if (!data.length) return self.validCoords = false;
+                        self.validCoords = true;
+                        // eslint-disable-next-line
+                        L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}', {
+                            attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+                            maxZoom: 18,
+                            id: 'mapbox.streets',
+                            accessToken: 'pk.eyJ1IjoiZ3BsYXk5NyIsImEiOiJjanltdGViajAwa3piM25xa3FkMXA2YndqIn0.xlIf98rUtbTPNYNAjMvJNg'
+                        }).addTo(map);
+                        setTimeout(() => {
+                            // eslint-disable-next-line
+                            map.fitBounds(L.polyline(data, {
+                                color: '#4589fc'
+                            }).addTo(map).getBounds());
+                        }, 2000);
                     });
                 }
             });
@@ -375,6 +419,11 @@
 
     .v-timeline-item.last-timeline-item {
         padding-bottom: 0;
+    }
+
+    #map {
+        width: 100%;
+        height: 500px;
     }
 </style>
 
