@@ -374,10 +374,6 @@ import { setTimeout } from 'timers';
                             self.validCoords = true;
                             setTimeout(() => {
                                 // eslint-disable-next-line
-                                map.fitBounds(L.polyline(data, {
-                                    color: '#4589fc'
-                                }).addTo(map).getBounds());
-                                // eslint-disable-next-line
                                 L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}', {
                                     attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
                                     maxZoom: 18,
@@ -386,6 +382,10 @@ import { setTimeout } from 'timers';
                                 }).addTo(map);
                                 setTimeout(() => {
                                     map.invalidateSize();
+                                    // eslint-disable-next-line
+                                    map.fitBounds(L.polyline(data, {
+                                        color: '#4589fc'
+                                    }).addTo(map).getBounds());
                                 }, 1000);
                             }, 1000);
                         });
