@@ -239,7 +239,7 @@ import { setTimeout } from 'timers';
                 return Math.abs((parseFloat((speeds.reduce((a, b) => a + b, 0) / speeds.length) || 0) * 3.6).toFixed(2));
             },
             distance() {
-                return (this.avgSpeed * (((this.log.end - this.log.start) / 3600)) || 0).toFixed(2);
+                return (this.avgSpeed * ((this.log.end - this.log.start) / 3600) || 0).toFixed(2);
             },
             kWChartValues() {
                 const powers = this.log.stats.filter((stat) => stat.dc_battery_power != null).map((stat) => {

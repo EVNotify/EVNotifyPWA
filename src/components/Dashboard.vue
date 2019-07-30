@@ -1,5 +1,5 @@
 <template>
-  <v-layout>
+  <v-layout class="full-height">
     <v-dialog v-model="showSOCExplaination" max-width="290" persistent scrollable>
       <v-card>
         <v-card-title class="headline">State of charge</v-card-title>
@@ -92,7 +92,7 @@
                   <v-list-tile-sub-title>Min / Max / Inlet</v-list-tile-sub-title>
                 </v-list-tile-content>
               </v-list-tile>
-              <v-subheader>Battery data</v-subheader>
+              <v-subheader class="mt-2">Battery data</v-subheader>
               <v-layout row wrap>
                 <v-flex xs6>
                   <v-list-tile>
@@ -126,25 +126,31 @@
                   <v-list-tile-sub-title>Charged / discharged all time</v-list-tile-sub-title>
                 </v-list-tile-content>
               </v-list-tile>
-              <v-subheader>Battery health</v-subheader>
-              <v-list-tile>
-                <v-list-tile-action>
-                  <v-icon color="teal">favorite</v-icon>
-                </v-list-tile-action>
-                <v-list-tile-content>
-                  <v-list-tile-title>{{ syncData.soh || 0 }} %</v-list-tile-title>
-                  <v-list-tile-sub-title>State of Health (SOH)</v-list-tile-sub-title>
-                </v-list-tile-content>
-              </v-list-tile>
-              <v-list-tile class="last-tile">
-                <v-list-tile-action>
-                  <v-icon color="teal">flash_auto</v-icon>
-                </v-list-tile-action>
-                <v-list-tile-content>
-                  <v-list-tile-title>{{ syncData.aux_battery_voltage || 0 }} V</v-list-tile-title>
-                  <v-list-tile-sub-title>Aux Battery Voltage</v-list-tile-sub-title>
-                </v-list-tile-content>
-              </v-list-tile>
+              <v-subheader class="mt-2">Battery health</v-subheader>
+              <v-layout row wrap>
+                <v-flex xs6>
+                  <v-list-tile>
+                    <v-list-tile-action>
+                      <v-icon color="teal">favorite</v-icon>
+                    </v-list-tile-action>
+                    <v-list-tile-content>
+                      <v-list-tile-title>{{ syncData.soh || 0 }} %</v-list-tile-title>
+                      <v-list-tile-sub-title>State of Health</v-list-tile-sub-title>
+                    </v-list-tile-content>
+                  </v-list-tile>
+                </v-flex>
+                <v-flex xs6>
+                  <v-list-tile class="last-tile">
+                    <v-list-tile-action>
+                      <v-icon color="teal">flash_auto</v-icon>
+                    </v-list-tile-action>
+                    <v-list-tile-content>
+                      <v-list-tile-title>{{ syncData.aux_battery_voltage || 0 }} V</v-list-tile-title>
+                      <v-list-tile-sub-title>Aux Voltage</v-list-tile-sub-title>
+                    </v-list-tile-content>
+                  </v-list-tile>
+                </v-flex>
+              </v-layout>
             </v-list>
           </div>
         </v-card-title>
@@ -337,6 +343,9 @@
   }
   .v-list__tile__action {
     min-width: 35px;
+  }
+  .full-height {
+    min-height: 100vh;
   }
 </style>
 
