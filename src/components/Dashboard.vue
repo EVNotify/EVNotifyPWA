@@ -283,9 +283,6 @@ import { setInterval } from 'timers';
       isSupportedCar() {
         return cars[this.settings.car] != null;
       },
-      convertSubHeader(date) {
-        return this.$root.MomentJS(date.split('_').reverse()).format('MMMM YYYY');
-      },
       convertIcon(charge) {
         return charge ? 'ev_station' : 'directions_car';
       },
