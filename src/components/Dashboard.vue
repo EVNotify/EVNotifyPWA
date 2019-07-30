@@ -344,6 +344,9 @@
   .v-list__tile__action {
     min-width: 35px;
   }
+  .full-height {
+    min-height: 100vh;
+  }
 </style>
 
 <style>
@@ -352,8 +355,5 @@
   }
   .v-list--two-line .double-line .v-list__tile {
     height: 70px;
-  }
-  .full-height {
-    min-height: 100vh;
   }
 </style>
