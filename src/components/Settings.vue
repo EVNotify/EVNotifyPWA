@@ -1,5 +1,5 @@
 <template>
-    <v-layout>
+    <v-layout justify-center>
         <v-dialog v-model="changePasswordDialog" persistent max-width="290">
             <v-card>
                 <v-card-title class="headline">Change password</v-card-title>
@@ -112,7 +112,7 @@
                 </v-card-actions>
             </v-card>
         </v-dialog>
-        <v-flex xs12 sm6 offset-sm3>
+        <v-flex xs12 sm12 md6>
             <v-form>
                 <v-list>
                     <v-list-group v-for="setting in settings" :key="setting.title" v-model="setting.active"

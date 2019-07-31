@@ -1,6 +1,6 @@
 <template>
-    <v-layout>
-        <v-flex xs12 sm6 offset-sm3>
+    <v-layout justify-center>
+        <v-flex xs12 sm12 md6>
             <v-card>
                 <v-list two-line subheader v-if="loaded && Object.keys(logs).length">
                     <div v-for="(month, index) in logs" :key="index">
