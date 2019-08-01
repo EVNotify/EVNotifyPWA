@@ -1,5 +1,5 @@
 <template>
-    <v-layout>
+    <v-layout justify-center>
         <v-dialog v-model="showBtnExplaination" max-width="290" persistent scrollable>
             <v-card>
                 <v-card-title class="headline">Why?</v-card-title>
@@ -21,7 +21,7 @@
                 </v-card-actions>
             </v-card>
         </v-dialog>
-        <v-flex xs12 sm6 offset-sm3>
+        <v-flex xs12 sm12 md6>
             <v-card class="mx-auto" v-if="log.id" v-show="!showChart && !showMap">
                 <v-card-title>
                     <v-icon class="mr-5" size="64" @click="$router.push('/logs')">chevron_left</v-icon>

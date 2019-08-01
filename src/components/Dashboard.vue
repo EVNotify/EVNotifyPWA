@@ -1,5 +1,5 @@
 <template>
-  <v-layout class="full-height">
+  <v-layout class="full-height" justify-center>
     <v-dialog v-model="showSOCExplaination" max-width="290" persistent scrollable>
       <v-card>
         <v-card-title class="headline">State of charge</v-card-title>
@@ -13,7 +13,7 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
-    <v-flex xs12 sm6 offset-sm3>
+    <v-flex xs12 sm12 md6>
       <v-card class="main-card">
         <v-card-title primary-title>
           <v-layout class="upper-part">
