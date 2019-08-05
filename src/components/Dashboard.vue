@@ -153,10 +153,9 @@
               </v-layout>
             </v-list>
             <v-divider class="mt-1 mb-3"></v-divider>
-            <v-list two-line subheader v-if="loaded && Object.keys(logs).length">
-              <v-subheader v-if="loaded && Object.keys(logs).length">Latest log</v-subheader>
-              <div v-for="(month, index) in logs" :key="index">
-                <v-list-tile v-for="log in logs[index].slice(0,1)" :key="log.id" avatar @click="$router.push({name: 'log', query: {id: log.id}})">
+            <v-list two-line subheader v-if="log.id">
+              <v-subheader>Latest log</v-subheader>
+                <v-list-tile avatar @click="$router.push({name: 'log', query: {id: log.id}})" class="last-tile">
                   <v-list-tile-avatar>
                     <v-icon class="teal lighten-1 white--text">{{ convertIcon(log.charge) }}</v-icon>
                   </v-list-tile-avatar>
@@ -170,8 +169,6 @@
                     </v-btn>
                   </v-list-tile-action>
                 </v-list-tile>
-                <div class="last-tile"></div>
-              </div>
             </v-list>
           </div>
         </v-card-title>
@@ -210,8 +207,7 @@
       dataOutdatedMessageTimestamp: '',
       settings: storage.getValue('settings', {}),
       showSOCExplaination: false,
-      logs: {},
-      loaded: false
+      log: {}
     }),
     computed: {
       cycleColor() {
@@ -315,26 +311,8 @@
 
       var self = this;
 
-      self.$root.EVNotify.getLogs(0, (err, driveLogs) => {
-        if (!err && driveLogs) {
-          self.$root.EVNotify.getLogs(1, (err, chargeLogs) => {
-            if (!err && chargeLogs) {
-              const combinedLogs = chargeLogs.concat(driveLogs)
-                      .sort((a, b) => b.end - a.end);
-              const logs = {};
-
-              combinedLogs.forEach((log) => {
-                const date = new Date(log.end * 1000);
-                const index = `${date.getMonth()}_${date.getFullYear()}`;
-
-                if (!logs[index]) logs[index] = [];
-                logs[index].push(log);
-              });
-              self.loaded = true;
-              self.logs = logs;
-            }
-          });
-        }
+      self.$root.EVNotify.getLatestLog((err, log) => {
+        if (!err && log) self.log = log;
       });
     },
     beforeDestroy() {

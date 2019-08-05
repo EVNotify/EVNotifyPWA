@@ -332,6 +332,24 @@ EVNotify.prototype.getLog = function (id, callback) {
     return self;
 };
 
+EVNotify.prototype.getLatestLog = function (callback) {
+    var self = this;
+
+    // check authentication
+    if (!self.akey || !self.token) {
+        if (typeof callback === 'function') callback(401, null); // missing previous login request
+    } else {
+        sendRequest('get', 'logdetail/latest', {
+            akey: self.akey,
+            token: self.token
+        }, function (err, logObj) {
+            if (typeof callback === 'function') callback(err, ((!err && logObj && logObj.data) ? logObj.data : null));
+        });
+    }
+
+    return self;
+};
+
 EVNotify.prototype.updateLog = function (log, callback) {
     var self = this;
 
