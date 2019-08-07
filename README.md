@@ -1,4 +1,7 @@
 # EVNotifyPWA
+
+[![Greenkeeper badge](https://badges.greenkeeper.io/EVNotify/EVNotifyPWA.svg)](https://greenkeeper.io/)
+
 PWA Webinterface for EVNotify
 
 ## Project setup
