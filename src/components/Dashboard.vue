@@ -40,7 +40,7 @@
                     </v-list-tile-action>
                     <v-list-tile-content>
                       <v-list-tile-title :style="{color: powerAmountColor}">{{ powerAmount }} kW</v-list-tile-title>
-                      <span v-if="syncData.charging" class="font-weight-light font-italic">{{ rangePerMinute }} km / min</span>
+                      <span v-if="syncData.charging" class="font-weight-light font-italic caption">{{ rangePerMinute }} km / min</span>
                     </v-list-tile-content>
                   </v-list-tile>
                   <v-list-tile v-if="isSupportedCar()">
