@@ -57,7 +57,8 @@
                       <v-icon color="teal">schedule</v-icon>
                     </v-list-tile-action>
                     <v-list-tile-content>
-                      <v-list-tile-title>{{ chargingTimeLeft }} h ({{ finishTime }})</v-list-tile-title>
+                      <v-list-tile-title>{{ chargingTimeLeft }} hours left</v-list-tile-title>
+                      <span class="font-weight-light font-italic caption">Finishes at ~{{ finishTime }}</span>
                     </v-list-tile-content>
                   </v-list-tile>
                 </v-list>
