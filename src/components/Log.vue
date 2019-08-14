@@ -51,6 +51,7 @@
                                     <v-btn class="mx-0" :disabled="!saveBtnHighlight" @click="save()" :color="btnHighlightColor">Save</v-btn>
                                 </template>
                             </v-text-field>
+                            <div class="total-time">Duration: {{ totalTime }}h</div>
                         </v-timeline-item>
                         <v-timeline-item class="mb-1">
                             <v-flex>
@@ -204,6 +205,9 @@ import { setTimeout } from 'timers';
             },
             endTime() {
                 return this.displayTime(this.log.end);
+            },
+            totalTime() {
+                return this.$root.MomentJS.utc(this.$root.MomentJS(this.endTime, 'HH:mm:ss').diff(this.$root.MomentJS(this.startTime, 'HH:mm:ss'))).format("HH:mm:ss")
             },
             logDate() {
                 return this.$root.MomentJS(new Date(this.log.start * 1000)).format('MMMM Do YYYY');
@@ -432,6 +436,11 @@ import { setTimeout } from 'timers';
     #map {
         width: 100%;
         height: 500px;
+    }
+
+    .total-time {
+        padding: 0 12px;
+        color: rgba(0,0,0,0.87);
     }
 </style>
 
