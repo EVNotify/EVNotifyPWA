@@ -34,7 +34,7 @@
                     </v-layout>
                 </v-card-title>
                 <v-sheet color="transparent" class="kw-chart-sheet">
-                    <v-sparkline auto-draw :value="kWChartValues" :gradient="['#1feaea', '#ffd200', '#f72047']"
+                    <v-sparkline :value="kWChartValues" :gradient="['#1feaea', '#ffd200', '#f72047']"
                         stroke-linecap="round" smooth>
                         <template v-slot:label="item">{{ item.value }}</template>
                     </v-sparkline>
@@ -334,7 +334,7 @@ import { setTimeout } from 'timers';
             },
             mapData() {
                 const self = this;
-                const stats = JSON.parse(JSON.stringify(self.log.stats)).sort((a, b) => a.timestamp - b.timestamp);
+                const stats = [...self.log.stats].sort((a, b) => a.timestamp - b.timestamp);
 
                 return stats.filter((stat) => stat.latitude != null && stat.longitude != null).map((stat) => ({
                     lat: stat.latitude,
