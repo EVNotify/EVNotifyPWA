@@ -412,7 +412,7 @@
     min-height: 100vh;
   }
   .v-list__tile__sub-title.quote-title {
-      white-space: unset;
+    white-space: unset;
   }
 </style>
 
