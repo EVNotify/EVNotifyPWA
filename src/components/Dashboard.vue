@@ -23,7 +23,9 @@
                   :value="syncData.soc_display || syncData.soc_bms" :color="cycleColor">
                   <div class="progress-cycle-text-container">
                     <p>{{ syncData.soc_display || syncData.soc_bms }} %</p>
-                    <v-icon color="primary" v-if="syncData.charging">flash_on</v-icon>
+                  </div>
+                  <div v-if="syncData.charging" class="centerchargeicon">
+                    <v-icon color="primary">flash_on</v-icon>
                   </div>
                 </v-progress-circular>
                 <v-btn class="socexplainationmodal" icon ripple @click="showSOCExplaination = true">
@@ -413,6 +415,10 @@
   }
   .v-list__tile__sub-title.quote-title {
       white-space: unset;
+  }
+  .centerchargeicon {
+    width: 24px;
+    margin: 0 auto;
   }
 </style>
 
