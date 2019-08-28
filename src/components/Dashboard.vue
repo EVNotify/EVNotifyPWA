@@ -155,7 +155,7 @@
                 </v-flex>
               </v-layout>
             </v-list>
-            <v-divider class="mt-1 mb-3"></v-divider>
+            <v-divider class="mt-1 mb-3" v-if="log.id"></v-divider>
             <v-list two-line subheader v-if="log.id">
               <v-subheader>Latest log</v-subheader>
                 <v-list-tile avatar @click="$router.push({name: 'log', query: {id: log.id}})">
@@ -173,6 +173,7 @@
                   </v-list-tile-action>
                 </v-list-tile>
             </v-list>
+            <v-divider class="mt-1 mb-3"></v-divider>
             <v-list two-line subheader>
               <v-subheader>Random robot of the day</v-subheader>
                 <v-list-tile avatar @click="$router.push('/robots')" class="last-tile">
