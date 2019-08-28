@@ -23,7 +23,9 @@
                   :value="syncData.soc_display || syncData.soc_bms" :color="cycleColor">
                   <div class="progress-cycle-text-container">
                     <p>{{ syncData.soc_display || syncData.soc_bms }} %</p>
-                    <v-icon color="primary" v-if="syncData.charging">flash_on</v-icon>
+                  </div>
+                  <div v-if="syncData.charging" class="centerchargeicon">
+                    <v-icon color="primary">flash_on</v-icon>
                   </div>
                 </v-progress-circular>
                 <v-btn class="socexplainationmodal" icon ripple @click="showSOCExplaination = true">
@@ -40,7 +42,7 @@
                     </v-list-tile-action>
                     <v-list-tile-content>
                       <v-list-tile-title :style="{color: powerAmountColor}">{{ powerAmount }} kW</v-list-tile-title>
-                      <span v-if="syncData.charging" class="font-weight-light font-italic">{{ rangePerMinute }} km / min</span>
+                      <span v-if="syncData.charging" class="font-weight-light font-italic caption">{{ rangePerMinute }} km / min</span>
                     </v-list-tile-content>
                   </v-list-tile>
                   <v-list-tile v-if="isSupportedCar()">
@@ -57,7 +59,8 @@
                       <v-icon color="teal">schedule</v-icon>
                     </v-list-tile-action>
                     <v-list-tile-content>
-                      <v-list-tile-title>{{ chargingTimeLeft }} h ({{ finishTime }})</v-list-tile-title>
+                      <v-list-tile-title>{{ chargingTimeLeft }} hours left</v-list-tile-title>
+                      <span class="font-weight-light font-italic caption">Finishes at ~{{ finishTime }}</span>
                     </v-list-tile-content>
                   </v-list-tile>
                 </v-list>
@@ -155,7 +158,7 @@
             <v-divider class="mt-1 mb-3"></v-divider>
             <v-list two-line subheader v-if="log.id">
               <v-subheader>Latest log</v-subheader>
-                <v-list-tile avatar @click="$router.push({name: 'log', query: {id: log.id}})" class="last-tile">
+                <v-list-tile avatar @click="$router.push({name: 'log', query: {id: log.id}})">
                   <v-list-tile-avatar>
                     <v-icon class="teal lighten-1 white--text">{{ convertIcon(log.charge) }}</v-icon>
                   </v-list-tile-avatar>
@@ -168,6 +171,19 @@
                       <v-icon color="grey lighten-1">info</v-icon>
                     </v-btn>
                   </v-list-tile-action>
+                </v-list-tile>
+            </v-list>
+            <v-list two-line subheader>
+              <v-subheader>Random robot of the day</v-subheader>
+                <v-list-tile avatar @click="$router.push('/robots')" class="last-tile">
+                  <v-list-tile-avatar>
+                    <v-icon v-if="!randomRobot.id">help</v-icon>
+                    <v-img v-else :src="randomRobotAvatar"></v-img>
+                  </v-list-tile-avatar>
+                  <v-list-tile-content>
+                    <v-list-tile-sub-title v-if="!randomRobot.id" class="quote-title">No robot yet. They are waiting here, if you click me.</v-list-tile-sub-title>
+                    <v-list-tile-sub-title v-else class="quote-title">{{ randomRobot.quote }}</v-list-tile-sub-title>
+                  </v-list-tile-content>
                 </v-list-tile>
             </v-list>
           </div>
@@ -201,6 +217,9 @@
         aux_battery_voltage: 0,
         soh: 0
       },
+      randomRobot: {
+        id: ''
+      },
       fetchInterval: 0,
       updatedTimestamp: '',
       dataOutdatedMessage: '',
@@ -210,6 +229,9 @@
       log: {}
     }),
     computed: {
+      randomRobotAvatar() {
+        return `https://robohash.org/${this.randomRobot.id}`;
+      },
       cycleColor() {
         const soc = this.syncData.soc_display || this.syncData.soc_bms;
 
@@ -314,6 +336,15 @@
       self.$root.EVNotify.getLatestLog((err, log) => {
         if (!err && log) self.log = log;
       });
+      self.$root.EVNotify.getRobots((err, robots) => {
+        if (!err && Array.isArray(robots)) {
+          const boughtRobots = robots.filter((robot) => robot.bought);
+
+          if (boughtRobots.length) {
+            self.randomRobot = boughtRobots[Math.floor(Math.random() * boughtRobots.length)];
+          }
+        }
+      })
     },
     beforeDestroy() {
       clearInterval(this.fetchInterval);
@@ -381,6 +412,13 @@
   }
   .full-height {
     min-height: 100vh;
+  }
+  .v-list__tile__sub-title.quote-title {
+      white-space: unset;
+  }
+  .centerchargeicon {
+    width: 24px;
+    margin: 0 auto;
   }
 </style>
 
