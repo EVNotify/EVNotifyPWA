@@ -112,7 +112,6 @@
 
 <script>
     import { Line } from 'vue-chartjs';
-import { setTimeout } from 'timers';
 
     export default {
         data: () => ({
@@ -370,28 +369,30 @@ import { setTimeout } from 'timers';
                     if (!self.$refs.map) return;
                     setTimeout(() => {
                         self.$nextTick(() => {
-                            // eslint-disable-next-line
-                            const map = L.map('map');
                             const data = self.mapData;
 
                             if (!data.length) return self.validCoords = false;
                             self.validCoords = true;
-                            setTimeout(() => {
-                                // eslint-disable-next-line
-                                L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}', {
-                                    attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
-                                    maxZoom: 18,
-                                    id: 'mapbox.streets',
-                                    accessToken: 'pk.eyJ1IjoiZ3BsYXk5NyIsImEiOiJjanltdGViajAwa3piM25xa3FkMXA2YndqIn0.xlIf98rUtbTPNYNAjMvJNg'
-                                }).addTo(map);
-                                setTimeout(() => {
-                                    map.invalidateSize();
-                                    // eslint-disable-next-line
-                                    map.fitBounds(L.polyline(data, {
-                                        color: '#4589fc'
-                                    }).addTo(map).getBounds());
-                                }, 1000);
-                            }, 1000);
+                            // eslint-disable-next-line
+                            const bounds = new google.maps.LatLngBounds();
+                            
+                            data.forEach((latLng) => bounds.extend(latLng));
+                            
+                            // eslint-disable-next-line
+                            const map = new google.maps.Map(self.$refs.map, {
+                                zoom: 10,
+                                center: bounds.getCenter()
+                            });
+                            // eslint-disable-next-line
+                            const polyline = new google.maps.Polyline({
+                                path: self.mapData,
+                                geodesic: true,
+                                strokeColor: '#FF0000',
+                                strokeOpacity: 1.0,
+                                strokeWeight: 2
+                            });
+
+                            polyline.setMap(map);
                         });
                     });
                 }
