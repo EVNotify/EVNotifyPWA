@@ -294,6 +294,29 @@ EVNotify.prototype.getExtended = function (callback) {
     return self;
 };
 
+/**
+ * Function to get the latest location data for the AKey
+ * @param  {Function} callback  callback function
+ * @return {Object}             returns this
+ */
+EVNotify.prototype.getLocation = function (callback) {
+    var self = this;
+
+    // check authentication
+    if (!self.akey || !self.token) {
+        if (typeof callback === 'function') callback(401, null); // missing previous login request
+    } else {
+        sendRequest('get', 'location', {
+            akey: self.akey,
+            token: self.token
+        }, function (err, locationObj) {
+            if (typeof callback === 'function') callback(err, ((!err && locationObj && locationObj.data) ? locationObj.data : null));
+        });
+    }
+
+    return self;
+};
+
 EVNotify.prototype.getLogs = function (charge, callback) {
     var self = this;
 

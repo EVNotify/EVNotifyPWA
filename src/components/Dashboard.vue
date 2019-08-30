@@ -14,7 +14,7 @@
       </v-card>
     </v-dialog>
     <v-flex xs12 sm12 md6>
-      <v-card class="main-card">
+      <v-card class="main-card" v-show="!showMap">
         <v-card-title primary-title>
           <v-layout class="upper-part">
             <v-flex xs5>
@@ -176,7 +176,7 @@
             <v-divider class="mt-1 mb-3"></v-divider>
             <v-list two-line subheader>
               <v-subheader>Random robot of the day</v-subheader>
-                <v-list-tile avatar @click="$router.push('/robots')" class="last-tile">
+                <v-list-tile avatar @click="$router.push('/robots')" :class="{'last-tile': !syncData.last_location}">
                   <v-list-tile-avatar>
                     <v-icon v-if="!randomRobot.id">help</v-icon>
                     <v-img v-else :src="randomRobotAvatar"></v-img>
@@ -192,8 +192,33 @@
                   </v-list-tile-action>
                 </v-list-tile>
             </v-list>
+            <v-divider v-if="syncData.last_location" class="mt-1 mb-3"></v-divider>
+            <v-list two-line subheader v-if="syncData.last_location">
+              <v-subheader>Last location</v-subheader>
+                <v-list-tile avatar @click="showMap = true" :class="{'last-tile': syncData.last_location}">
+                  <v-list-tile-avatar>
+                    <v-icon>map</v-icon>
+                  </v-list-tile-avatar>
+                  <v-list-tile-content>
+                    <v-list-tile-sub-title class="quote-title">Click to show last location within map. To reduce costs, it's not directly rendered.</v-list-tile-sub-title>
+                  </v-list-tile-content>
+                  <v-list-tile-action>
+                    <v-btn icon ripple @click="$router.push('/robots')">
+                      <v-icon color="grey lighten-1">info</v-icon>
+                    </v-btn>
+                  </v-list-tile-action>
+                </v-list-tile>
+            </v-list>
           </div>
         </v-card-title>
+      </v-card>
+      <v-card v-show="showMap" class="main-card">
+        <v-container class="btn-container">
+            <v-btn class="primary" @click="showMap = false">Show dashboard</v-btn>
+        </v-container>
+        <div>
+            <div id="map" ref="map"></div>
+        </div>
       </v-card>
     </v-flex>
   </v-layout>
@@ -216,6 +241,9 @@
         charging: 0,
         last_extended: 0,
         last_soc: 0,
+        last_location: 0,
+        latitude: 0,
+        longitude: 0,
         dc_battery_current: 0,
         dc_battery_voltage: 0,
         cumulative_energy_charged: 0,
@@ -232,6 +260,7 @@
       dataOutdatedMessageTimestamp: '',
       settings: storage.getValue('settings', {}),
       showSOCExplaination: false,
+      showMap: false,
       log: {}
     }),
     computed: {
@@ -289,7 +318,7 @@
       fetchData() {
         const self = this;
 
-        ['getSOC', 'getExtended'].forEach((method) => {
+        ['getSOC', 'getExtended', 'getLocation'].forEach((method) => {
           self.$root.EVNotify[method]((err, obj) => {
             if (!err && obj) Object.keys(obj).forEach((key) => self.syncData[key] = obj[key]);
             this.updateTimestamp();
@@ -330,7 +359,35 @@
         end = new Date(end * 1000);
 
         return `${this.$root.MomentJS(end).format('MMMM Do YYYY')} ${this.$root.MomentJS(start).format('HH:mm')}-${this.$root.MomentJS(end).format('HH:mm')}`
+      },
+      showLastPosition() {
+        const markerLocation = {
+          lat: this.syncData.latitude,
+          lng: this.syncData.longitude
+        };
+
+        if (!this.showMap || !this.syncData.last_location || !this.syncData.latitude || !this.syncData.longitude) return;
+        // eslint-disable-next-line
+        const map = new google.maps.Map(this.$refs.map, {
+          zoom: 14,
+          center: markerLocation
+        });
+        // eslint-disable-next-line
+        const infoWindow = new google.maps.InfoWindow({
+          content: `Last location from ${this.$root.MomentJS(this.syncData.last_location * 1000).format('MMMM Do YYYY HH:mm')}`
+        });
+        // eslint-disable-next-line
+        const marker = new google.maps.Marker({
+          position: markerLocation,
+          map,
+          title: 'Last location'
+        });
+
+        marker.addListener('click', () => infoWindow.open(map, marker));
       }
+    },
+    watch: {
+      showMap: 'showLastPosition'
     },
     mounted() {
       if (!storage.getValue('user')) return;
@@ -425,6 +482,15 @@
   .centerchargeicon {
     width: 24px;
     margin: 0 auto;
+  }
+  .btn-container {
+      text-align: center;
+      padding-top: 0;
+      padding-bottom: 0;
+  }
+  #map {
+      width: 100%;
+      height: 500px;
   }
 </style>
 
