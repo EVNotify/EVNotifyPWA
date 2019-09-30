@@ -8,7 +8,7 @@
             <span>Logs</span>
             <v-icon>list</v-icon>
         </v-btn>
-        <v-btn flat color="teal" value="Stations">
+        <v-btn flat disabled color="teal" value="Stations">
             <span>Stations</span>
             <v-icon>ev_station</v-icon>
         </v-btn>
