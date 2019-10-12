@@ -36,8 +36,8 @@
             <v-flex xs7>
               <div class="progress-cycle-container">
                 <v-list>
-                  <v-list-tile>
-                    <v-list-tile-action>
+                  <v-list-tile v-if="!dataOutdated()">
+                    <v-list-tile-action >
                       <v-icon color="teal">flash_on</v-icon>
                     </v-list-tile-action>
                     <v-list-tile-content>
