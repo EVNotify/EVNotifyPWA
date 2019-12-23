@@ -24,7 +24,7 @@
     },
     mounted() {
       this.darkMode = Storage.getValue('darkMode', false);
-      EventBus.$on('darkMode', (useDarkMode) => this.darkMode = useDarkMode);
+      EventBus.$on('darkMode', (useDarkMode) => this.darkMode = useDarkMode || false);
     }
   }
 </script>

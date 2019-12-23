@@ -34,7 +34,7 @@ export default {
             }
             if (value) return ((!isNaN(parseFloat(value)) && isFinite(value)) ? parseFloat(value) :
                 ((value === 'true') ? true : ((value === 'false') ? false : value)));
-            if (defaultValue) return defaultValue;
+            if (defaultValue != null) return defaultValue;
             return '';
         }
         return value;
