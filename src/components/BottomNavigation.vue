@@ -1,5 +1,5 @@
 <template>
-    <v-bottom-nav :value="true" fixed color="transparent">
+    <v-bottom-nav :value="true" fixed color="transparent" :style="{backgroundColor}">
         <v-btn flat color="teal" value="Dashboard" to="/">
             <span>Dashboard</span>
             <v-icon>dashboard</v-icon>
@@ -20,13 +20,21 @@
 </template>
 
 <script>
-    export default {}
+import { EventBus } from '../utils/event'
+import Storage from '../utils/storage';
+    export default {
+        data: () => ({
+            backgroundColor: (Storage.getValue('darkMode') ? '#212121' : 'white') + ' !important'
+        }),
+        mounted() {
+            EventBus.$on('darkMode', (useDarkMode) => {
+                this.backgroundColor = (useDarkMode ? '#212121' : 'white') + ' !important';
+            });
+        }
+    }
 </script>
 
 <style>
-.v-bottom-nav {
-    background-color: white !important;
-}
 
 /* iPhone XR Portrait*/
 @media only screen

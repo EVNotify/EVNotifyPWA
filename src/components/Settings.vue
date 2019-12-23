@@ -151,7 +151,8 @@
                                     @input="element.value = $event; showSaveIcon()" :value="element.value">
                                 </v-text-field>
                                 <v-switch v-else-if="element.type === 'switch'" :label="element.title"
-                                    @change="element.value = $event; showSaveIcon()" :value="element.value"
+                                    @change="element.value = $event; showSaveIcon(); callDynamicFunction(element.action, $event)" :value="element.value"
+                                    :input-value="element.value"
                                     :hint="element.hint" :persistent-hint="true">
                                 </v-switch>
                             </v-list-tile-content>
@@ -197,7 +198,7 @@
                 }, {
                     title: 'Logout',
                     type: 'button',
-                    color: 'white',
+                    color: 'secondary',
                     action: 'logout'
                 }]
             }, {
@@ -293,6 +294,16 @@
                     href: 'https://evnotify.de/datenschutz',
                     flat: true
                 }]
+            }, {
+                title: 'Appearance',
+                icon: 'palette',
+                elements: [{
+                    title: 'Dark mode',
+                    type: 'switch',
+                    value: Storage.getValue('darkMode', false),
+                    action: 'toggleDarkMode',
+                    hint: 'Turn off the lights'
+                }]
             }],
             token: Storage.getValue('user', {}).token,
             localSettings: {},
@@ -309,8 +320,12 @@
             newPassword2: ''
         }),
         methods: {
-            callDynamicFunction(name) {
-                this[name]();
+            callDynamicFunction(name, params) {
+                if (typeof this[name] !== 'function') return;
+                this[name](params);
+            },
+            toggleDarkMode(useDarkMode) {
+                EventBus.$emit('darkMode', Storage.setValue('darkMode', useDarkMode || false));
             },
             showSaveIcon() {
                 EventBus.$emit('save');
