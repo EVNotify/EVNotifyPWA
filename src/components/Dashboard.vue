@@ -280,7 +280,7 @@
       },
       powerAmountColor() {
         if (this.syncData.charging) return 'green';
-        return parseFloat(this.syncData.dc_battery_power) <= 0 ? '#448aff' : 'red';
+        return parseFloat(this.syncData.dc_battery_power) <= 0 ? '#009688' : 'red';
       },
       chargingTimeLeft() {
         return general.chargeTime(this.settings.car, this.syncData.soc_display, this.syncData.soc_bms, this.syncData.dc_battery_power, "timeleft");
@@ -446,7 +446,7 @@
   .progress-cycle-text-container p {
     margin-bottom: 0;
     text-align: center;
-    color: #1976d2;
+    color: #009688;
   }
 
   .temperature-text {
