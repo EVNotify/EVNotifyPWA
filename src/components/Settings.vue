@@ -169,7 +169,7 @@
     import {
         EventBus
     } from '../utils/event';
-    import Storage from '../utils/storage';
+    import storage from '../utils/storage';
 
     export default {
         data: () => ({
@@ -177,11 +177,11 @@
                 title: 'Credentials',
                 icon: 'account_circle',
                 elements: [{
-                    title: `AKey: ${Storage.getValue('user', {}).akey}`,
+                    title: `AKey: ${storage.getValue('user', {}).akey}`,
                     type: 'text'
                 }, {
                     title: 'Token',
-                    value: Storage.getValue('user', {}).token,
+                    value: storage.getValue('user', {}).token,
                     showPassword: false,
                     hint: 'It is like a password. Do not share this with people you do not trust!',
                     type: 'password'
@@ -300,12 +300,12 @@
                 elements: [{
                     title: 'Dark mode',
                     type: 'switch',
-                    value: Storage.getValue('darkMode', false),
+                    value: storage.getValue('darkMode', false),
                     action: 'toggleDarkMode',
                     hint: 'Turn off the lights'
                 }]
             }],
-            token: Storage.getValue('user', {}).token,
+            token: storage.getValue('user', {}).token,
             localSettings: {},
             showSnackbar: false,
             snackbarMessage: '',
@@ -325,7 +325,7 @@
                 this[name](params);
             },
             toggleDarkMode(useDarkMode) {
-                EventBus.$emit('darkMode', Storage.setValue('darkMode', useDarkMode || false));
+                EventBus.$emit('darkMode', storage.setValue('darkMode', useDarkMode || false));
             },
             showSaveIcon() {
                 EventBus.$emit('save');
@@ -345,7 +345,7 @@
                 });
             },
             logout() {
-                Storage.removeValue('user');
+                storage.removeValue('user');
                 this.$router.push('/login');
             },
             retrieveSettings() {
@@ -361,7 +361,7 @@
             },
             loadSettings(callback) {
                 const self = this;
-                const localSettings = Storage.getValue('settings', {});
+                const localSettings = storage.getValue('settings', {});
 
                 const displaySettings = (settings) => {
                     Object.keys(settings).forEach((key) => {
@@ -375,9 +375,9 @@
 
                 self.$root.EVNotify.getSettings((err, serverSettings) => {
                     if (!err && serverSettings) {
-                        displaySettings((self.localSettings = Storage.setValue('settings', serverSettings)));
+                        displaySettings((self.localSettings = storage.setValue('settings', serverSettings)));
                     } else {
-                        displaySettings((self.localSettings = Storage.getValue('settings', {})));
+                        displaySettings((self.localSettings = storage.getValue('settings', {})));
                     }
                     if (typeof callback === 'function') callback(err, serverSettings);
                 });
@@ -394,7 +394,7 @@
                         self.$root.EVNotify.setSettings(serverSettings, (err) => {
                             if (!err) {
                                 this.localSettings = serverSettings;
-                                Storage.setValue('settings', serverSettings);
+                                storage.setValue('settings', serverSettings);
                                 EventBus.$emit('unsave');
                                 // TODO
                             } else {
@@ -440,10 +440,10 @@
                     self.resetTokenDialog = false;
                     self.showSnackbar = true;
                     if (!err && token) {
-                        const user = Storage.getValue('user', {});
+                        const user = storage.getValue('user', {});
 
                         user.token = token;
-                        Storage.setValue('user', user);
+                        storage.setValue('user', user);
                         self.snackbarType = 'success';
                         self.snackbarMessage = 'Token changed';
                         self.settings[0].elements[1].value = token;
@@ -454,7 +454,7 @@
                 });
             },
             integrateABRP() {
-                const user = Storage.getValue('user', {});
+                const user = storage.getValue('user', {});
 
                 window.open(`https://abetterrouteplanner.com/oauth/auth?client_id=8&redirect_uri=https://app.evnotify.de/integrations/abrp/auth/${user.akey}/${user.token}`, '_blank');
             }
