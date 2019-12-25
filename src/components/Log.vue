@@ -55,7 +55,7 @@
                         </v-timeline-item>
                         <v-timeline-item class="mb-1">
                             <v-flex>
-                                <div class="cadivtion" style="color: black">{{ logDate }}</div>
+                                <div class="cadivtion">{{ logDate }}</div>
                                 <div v-if="startCEC || startCED">
                                     <div class="caption" v-if="log.charge">charged: {{ (endCEC - startCEC || 0).toFixed(1) }} kWh</div>
                                     <div class="caption" v-else>consumed: {{ (endCED - startCED || 0).toFixed(1)}} kWh<br>recuperated: {{ (endCEC - startCEC || 0).toFixed(1) }} kWh</div>
@@ -442,6 +442,15 @@
     .total-time {
         padding: 0 12px;
         color: rgba(0,0,0,0.87);
+    }
+    .theme--dark .total-time {
+        color:white;
+    }
+    .cadivtion {
+        color:black;
+    }
+    .theme--dark .cadivtion {
+        color:white;
     }
 </style>
 
