@@ -303,7 +303,7 @@
                 }, {
                     label: 'DC Battery Power',
                     key: 'dc_battery_power',
-                    color: 'darkgreen'
+                    color: 'green'
                 }, {
                     label: 'Battery temperature (Min)',
                     key: 'battery_min_temperature',
