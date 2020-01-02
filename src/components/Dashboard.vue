@@ -182,8 +182,8 @@
                     <v-img v-else :src="randomRobotAvatar"></v-img>
                   </v-list-tile-avatar>
                   <v-list-tile-content>
-                    <v-list-tile-sub-title v-if="!randomRobot.id" class="quote-title">No robot yet. They are waiting here, if you click me.</v-list-tile-sub-title>
-                    <v-list-tile-sub-title v-else class="quote-title">{{ randomRobot.quote }}</v-list-tile-sub-title>
+                    <v-list-tile-title v-if="!randomRobot.id" class="quote-title">No robot yet. They are waiting here, if you click me.</v-list-tile-title>
+                    <v-list-tile-title v-else class="quote-title">{{ randomRobot.quote }}</v-list-tile-title>
                   </v-list-tile-content>
                   <v-list-tile-action>
                     <v-btn icon ripple @click="$router.push('/robots')">
