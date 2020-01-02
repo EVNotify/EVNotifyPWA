@@ -34,9 +34,8 @@
                     </v-layout>
                 </v-card-title>
                 <v-sheet color="transparent" class="kw-chart-sheet">
-                    <v-sparkline :value="kWChartValues" :gradient="['#1feaea', '#ffd200', '#f72047']"
-                        stroke-linecap="round" smooth>
-                        <template v-slot:label="item">{{ item.value }}</template>
+                    <v-sparkline :value="kWChartValues" :gradient="['#1feaea', '#ffd200', '#f72047']" :show-labels=true
+                         stroke-linecap="round" smooth :color="sparklinecolor">
                     </v-sparkline>
                 </v-sheet>
                 <v-container>
@@ -112,6 +111,7 @@
 
 <script>
     import { Line } from 'vue-chartjs';
+    import storage from '../utils/storage';
 
     export default {
         data: () => ({
@@ -276,6 +276,13 @@
 
                 return avgValues.reverse();
 
+            },
+            sparklinecolor() {
+                if(storage.getValue('darkMode', false) == true) {
+                    return "white";
+                }
+                else
+                    return "black";
             },
             chartData() {
                 const self = this;
