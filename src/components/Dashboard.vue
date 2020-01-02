@@ -298,7 +298,12 @@
         if (this.currentRange < (this.totalRange * 10 / 100)) {
           return 'red';
         }
-        return 'green';
+        if(storage.getValue('darkMode', false) == true) {
+          return 'chartreuse';
+        }
+        else {
+          return 'green';
+        }
       },
       totalRange() {
         return parseInt((cars[this.settings.car].CAPACITY / this.settings.consumption) * 100) || 0;
@@ -310,10 +315,18 @@
     },
     methods: {
       getTemperatureColor(temperature) {
-        if (temperature < 20) return 'blue';
-        else if (temperature < 30) return 'green';
-        else if (temperature < 35) return 'orange';
-        return 'red';
+        if(storage.getValue('darkMode', false) == true) {
+          if (temperature < 20) return 'deepskyblue';
+          else if (temperature < 30) return 'chartreuse';
+          else if (temperature < 35) return 'orange';
+          return 'red';
+        }
+        else {
+          if (temperature < 20) return 'blue';
+          else if (temperature < 30) return 'green';
+          else if (temperature < 35) return 'orange';
+          return 'red';
+        }
       },
       fetchData() {
         const self = this;
@@ -447,6 +460,10 @@
     margin-bottom: 0;
     text-align: center;
     color: #009688;
+  }
+
+  .theme--dark .progress-cycle-container p {
+    color: white;
   }
 
   .temperature-text {
