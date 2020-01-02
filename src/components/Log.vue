@@ -112,6 +112,7 @@
 
 <script>
     import { Line } from 'vue-chartjs';
+    import storage from '../utils/storage';
 
     export default {
         data: () => ({
@@ -277,6 +278,13 @@
                 return avgValues.reverse();
 
             },
+            sparklinecolor() {
+                if(storage.getValue('darkMode', false) == true) {
+                    return "white";
+                }
+                else
+                    return "black";
+            },
             chartData() {
                 const self = this;
                 const stats = [...self.log.stats].sort((a, b) => a.timestamp - b.timestamp);
@@ -359,9 +367,20 @@
                                     xAxes: [{
                                         ticks: {
                                             autoSkip: true,
-                                            maxTicksLimit: 15
+                                            maxTicksLimit: 15,
+                                            fontColor: this.sparklinecolor
                                         }
-                                    }]   
+                                    }],
+                                    yAxes: [{
+                                        ticks:{
+                                            fontColor: this.sparklinecolor
+                                        }
+                                    }]
+                                },
+                                legend: {
+                                    labels: {
+                                        fontColor: this.sparklinecolor
+                                    }
                                 }
                             });
                         });
