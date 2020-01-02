@@ -93,10 +93,10 @@
                     @click="showBtnExplaination = true">Why don't I see this immediately?</p>
             </v-card>
             <v-card v-show="showChart">
+                <chart-line ref="chart"></chart-line>
                 <v-container class="btn-container">
                     <v-btn small color="primary" @click="showChart = false">Show summary</v-btn>
                 </v-container>
-                <chart-line ref="chart"></chart-line>
             </v-card>
             <v-card v-show="showMap">
                 <v-container class="btn-container">
