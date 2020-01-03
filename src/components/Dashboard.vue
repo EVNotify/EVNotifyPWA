@@ -279,7 +279,14 @@
         return (Math.abs(this.syncData.dc_battery_power) || 0).toFixed(2);
       },
       powerAmountColor() {
-        if (this.syncData.charging) return 'green';
+        if(this.syncData.charging) {
+          if(storage.getValue('darkMode', false) == true) {
+            return 'chartreuse';
+          }
+          else {
+            return 'green';
+          }
+        }
         return parseFloat(this.syncData.dc_battery_power) <= 0 ? '#009688' : 'red';
       },
       chargingTimeLeft() {
