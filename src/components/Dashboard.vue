@@ -202,11 +202,6 @@
                   <v-list-tile-content>
                     <v-list-tile-sub-title class="quote-title">Click to show last location within map. To reduce costs, it's not directly rendered.</v-list-tile-sub-title>
                   </v-list-tile-content>
-                  <v-list-tile-action>
-                    <v-btn icon ripple @click="$router.push('/robots')">
-                      <v-icon color="grey lighten-1">info</v-icon>
-                    </v-btn>
-                  </v-list-tile-action>
                 </v-list-tile>
             </v-list>
           </div>
