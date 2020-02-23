@@ -109,7 +109,8 @@
                             purchase_units: [{
                                 amount: {
                                     value: '2.49'
-                                }
+                                },
+                                description: 'EVNotify Robot'
                             }]
                         });
                     },
