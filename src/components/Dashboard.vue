@@ -195,6 +195,7 @@
             <v-divider v-if="syncData.last_location" class="mt-1 mb-3"></v-divider>
             <v-list two-line subheader v-if="syncData.last_location">
               <v-subheader>Last location</v-subheader>
+              <p class="caption last-location-timestamp">Last updated: {{ lastLocationTimestamp }}</p>
                 <v-list-tile avatar @click="showMap = true" :class="{'last-tile': syncData.last_location}">
                   <v-list-tile-avatar>
                     <v-icon>map</v-icon>
@@ -306,6 +307,9 @@
       rangePerMinute() {
         const time = general.chargeDecimalTime(this.settings.car, this.syncData.soc_display, this.syncData.soc_bms, this.syncData.dc_battery_power);
         return (parseFloat((this.totalRange - this.currentRange) / (60 / 100 * time * 100)) || 0).toFixed(2);
+      },
+      lastLocationTimestamp() {
+        return this.$root.MomentJS(this.syncData.last_location * 1000).format('MMMM Do YYYY HH:mm');
       }
     },
     methods: {
@@ -382,7 +386,7 @@
         });
         // eslint-disable-next-line
         const infoWindow = new google.maps.InfoWindow({
-          content: `Last location from ${this.$root.MomentJS(this.syncData.last_location * 1000).format('MMMM Do YYYY HH:mm')}`
+          content: `Last location from ${this.lastLocationTimestamp}`
         });
         // eslint-disable-next-line
         const marker = new google.maps.Marker({
@@ -439,6 +443,10 @@
   }
 
   .updated-timestamp {
+    padding: 0 16px;
+  }
+
+  .last-location-timestamp {
     padding: 0 16px;
   }
 
