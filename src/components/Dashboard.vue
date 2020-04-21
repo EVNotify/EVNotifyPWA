@@ -75,26 +75,42 @@
           <div class="bottom-part">
             <v-list two-line>
               <v-subheader>Battery temperature</v-subheader>
-              <v-list-tile>
-                <v-list-tile-action>
-                  <v-icon color="teal">ac_unit</v-icon>
-                </v-list-tile-action>
-                <v-list-tile-content>
-                  <v-list-tile-title>
-                    <p class="temperature-text" :style="{color: getTemperatureColor(syncData.battery_min_temperature)}">
-                      {{ syncData.battery_min_temperature || 0 }}
-                    </p> /
-                    <p class="temperature-text" :style="{color: getTemperatureColor(syncData.battery_max_temperature)}">
-                      {{ syncData.battery_max_temperature || 0 }}
-                    </p> /
-                    <p class="temperature-text"
-                      :style="{color: getTemperatureColor(syncData.battery_inlet_temperature)}">
-                      {{ syncData.battery_inlet_temperature || 0 }}
-                    </p> °C
-                  </v-list-tile-title>
-                  <v-list-tile-sub-title>Min / Max / Inlet</v-list-tile-sub-title>
-                </v-list-tile-content>
-              </v-list-tile>
+              <v-layout row wrap>
+                <v-flex xs6>
+                  <v-list-tile>
+                    <v-list-tile-action>
+                      <v-icon color="teal">ac_unit</v-icon>
+                    </v-list-tile-action>
+                    <v-list-tile-content>
+                      <v-list-tile-title>
+                        <p class="temperature-text" :style="{color: getTemperatureColor(syncData.battery_min_temperature)}">
+                          {{ syncData.battery_min_temperature || 0 }}
+                        </p> /
+                        <p class="temperature-text" :style="{color: getTemperatureColor(syncData.battery_max_temperature)}">
+                          {{ syncData.battery_max_temperature || 0 }}
+                        </p> /
+                        <p class="temperature-text"
+                          :style="{color: getTemperatureColor(syncData.battery_inlet_temperature)}">
+                          {{ syncData.battery_inlet_temperature || 0 }}
+                        </p> °C
+                      </v-list-tile-title>
+                      <v-list-tile-sub-title>Min / Max / Inlet</v-list-tile-sub-title>
+                    </v-list-tile-content>
+                  </v-list-tile>
+                </v-flex>
+                <v-flex xs6 v-if="syncData.odo">
+                  <v-subheader class="odo-subheader">ODO</v-subheader>
+                  <v-list-tile>
+                    <v-list-tile-action>
+                      <v-icon color="teal">drive_eta</v-icon>
+                    </v-list-tile-action>
+                    <v-list-tile-content>
+                      <v-list-tile-title>{{ syncData.odo || 0 }} km</v-list-tile-title>
+                      <v-list-tile-sub-title>Total distance</v-list-tile-sub-title>
+                    </v-list-tile-content>
+                  </v-list-tile>
+                </v-flex>
+              </v-layout>
               <v-subheader class="mt-2">Battery data</v-subheader>
               <v-layout row wrap>
                 <v-flex xs6>
@@ -228,6 +244,7 @@
   export default {
     data: () => ({
       syncData: {
+        odo: 0,
         soc_bms: 0,
         soc_display: 0,
         dc_battery_power: 0,
@@ -333,8 +350,8 @@
         ['getSOC', 'getExtended', 'getLocation'].forEach((method) => {
           self.$root.EVNotify[method]((err, obj) => {
             if (!err && obj) Object.keys(obj).forEach((key) => self.syncData[key] = obj[key]);
-            this.updateTimestamp();
-            this.dataOutdated();
+            self.updateTimestamp();
+            self.dataOutdated();
           });
         });
       },
@@ -481,6 +498,9 @@
   }
   .v-subheader {
     height: 20px;
+  }
+  .odo-subheader {
+    margin-top: -20px;
   }
   .socexplainationmodal {
     position: absolute;
