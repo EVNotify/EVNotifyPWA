@@ -498,4 +498,7 @@
     .kw-chart-sheet svg g {
         font-size: 12px !important;
     }
+    #map .gm-style-iw-d {
+        color: #000;
+    }
 </style>
