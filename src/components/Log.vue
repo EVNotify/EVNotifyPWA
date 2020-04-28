@@ -383,6 +383,7 @@
                                 zoom: 10,
                                 center: bounds.getCenter()
                             });
+
                             // eslint-disable-next-line
                             const polyline = new google.maps.Polyline({
                                 path: self.mapData,
@@ -393,6 +394,42 @@
                             });
 
                             polyline.setMap(map);
+
+                            // eslint-disable-next-line
+                            const startMarker = new google.maps.Marker({
+                                position: data[0],
+                                label: 'S',
+                                map
+                            });
+
+                            // eslint-disable-next-line
+                            const startInfoWindow = new google.maps.InfoWindow({
+                                content: `Start point from ${this.startTime}`
+                            });
+
+                            startMarker.addListener('click', () => {
+                                endInfoWindow.close();
+                                // eslint-disable-next-line
+                                startInfoWindow.open(map, startMarker);
+                            });
+
+                            // eslint-disable-next-line
+                            const endMarker = new google.maps.Marker({
+                                position: data[data.length -1],
+                                label: 'E',
+                                map
+                            });
+
+                            // eslint-disable-next-line
+                            const endInfoWindow = new google.maps.InfoWindow({
+                                content: `End point from ${this.endTime}`
+                            });
+
+                            endMarker.addListener('click', () => {
+                                startInfoWindow.close();
+                                // eslint-disable-next-line
+                                endInfoWindow.open(map, endMarker);
+                            });
                         });
                     });
                 }
