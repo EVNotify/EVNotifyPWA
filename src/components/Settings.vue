@@ -219,8 +219,14 @@
                         text: 'Hyundai IONIQ PlugIn-Hybrid',
                         value: 'IONIQ_PHEV'
                     }, {
+                        text: 'Hyundai IONIQ Facelift Electric',
+                        value: 'IONIQ_FL_EV'
+                    }, {
                         text: 'Kia Soul EV',
                         value: 'SOUL_EV'
+                    }, {
+                        text: 'Kia e-Soul Electric',
+                        value: 'E_SOUL'
                     }, {
                         text: 'Kia Niro EV',
                         value: 'NIRO_EV'
