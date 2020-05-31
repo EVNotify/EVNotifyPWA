@@ -419,6 +419,10 @@
       showMap: 'showLastPosition'
     },
     mounted() {
+      let MapsAPIScript = document.createElement('script');
+      MapsAPIScript.setAttribute('src', 'https://maps.googleapis.com/maps/api/js?key=AIzaSyAKSYlV4PJBbGMju4hFYkFLZLMlscENnWQ"');
+      document.head.appendChild(MapsAPIScript);
+
       if (!storage.getValue('user')) return;
       this.fetchInterval = setInterval(this.fetchData, 10000);
       this.fetchData();
