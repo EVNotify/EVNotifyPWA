@@ -21,10 +21,10 @@
 
 <script>
 import { EventBus } from '../utils/event'
-import Storage from '../utils/storage';
+import storage from '../utils/storage';
     export default {
         data: () => ({
-            backgroundColor: (Storage.getValue('darkMode') ? '#212121' : 'white') + ' !important'
+            backgroundColor: (storage.getValue('darkMode') ? '#212121' : 'white') + ' !important'
         }),
         mounted() {
             EventBus.$on('darkMode', (useDarkMode) => {

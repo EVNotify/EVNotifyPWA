@@ -12,7 +12,7 @@
 <script>
   import { EventBus } from './utils/event';
   import Header from './components/Header';
-  import Storage from './utils/storage';
+  import storage from './utils/storage';
 
   export default {
     name: 'App',
@@ -23,7 +23,7 @@
       Header
     },
     mounted() {
-      this.darkMode = Storage.getValue('darkMode', false);
+      this.darkMode = storage.getValue('darkMode', false);
       EventBus.$on('darkMode', (useDarkMode) => this.darkMode = useDarkMode || false);
     }
   }

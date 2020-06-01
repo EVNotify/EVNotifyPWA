@@ -8,7 +8,7 @@
 <script>
   import BottomNavigation from '../components/BottomNavigation';
   import Log from '../components/Log';
-  import Storage from '../utils/storage';
+  import storage from '../utils/storage';
 
   export default {
     data: () => ({
@@ -19,7 +19,7 @@
       Log
     },
     created() {
-      if (!Storage.getValue('user')) return this.$router.push('/login');
+      if (!storage.getValue('user')) return this.$router.push('/login');
       this.loggedIn = true;
     }
   }
