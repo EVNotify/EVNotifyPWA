@@ -310,6 +310,16 @@
                     action: 'toggleDarkMode',
                     hint: 'Turn off the lights'
                 }]
+            }, {
+                title: 'Support',
+                icon: 'card_giftcard',
+                elements: [{
+                    title: 'Turn on ads',
+                    type: 'switch',
+                    value: Storage.getValue('showAds', false),
+                    action: 'toggleAds',
+                    hint: 'You can support the development for free, if you turn on ads. They will be displayed on the dashboard. Alternatively, check out <a href="http://donate.evnotify.de">donate.evnotify.de</a>'
+                }]
             }],
             token: Storage.getValue('user', {}).token,
             localSettings: {},
@@ -332,6 +342,9 @@
             },
             toggleDarkMode(useDarkMode) {
                 EventBus.$emit('darkMode', Storage.setValue('darkMode', useDarkMode || false));
+            },
+            toggleAds(showAds) {
+                Storage.setValue('showAds', showAds || false);
             },
             showSaveIcon() {
                 EventBus.$emit('save');

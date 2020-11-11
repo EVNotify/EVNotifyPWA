@@ -171,6 +171,21 @@
                 </v-flex>
               </v-layout>
             </v-list>
+            <v-divider class="mt-1 mb-3" v-if="showAds"></v-divider>
+            <v-list two-line subheader v-if="showAds">
+              <v-subheader>Advertisment</v-subheader>
+                <v-list-tile>
+                  <v-list-tile-content id="ad">
+                    <ins class="adsbygoogle"
+                      style="display:block; height: 60px; width: 100%"
+                      data-ad-format="fluid"
+                      data-ad-layout-key="-fb+5w+4e-db+86"
+                      data-ad-client="ca-pub-9663163048537407"
+                      data-ad-slot="1270583011">
+                    </ins>
+                  </v-list-tile-content>
+                </v-list-tile>
+            </v-list>
             <v-divider class="mt-1 mb-3" v-if="log.id"></v-divider>
             <v-list two-line subheader v-if="log.id">
               <v-subheader>Latest log</v-subheader>
@@ -274,6 +289,7 @@
       settings: storage.getValue('settings', {}),
       showSOCExplaination: false,
       showMap: false,
+      showAds: false,
       log: {}
     }),
     computed: {
@@ -436,7 +452,21 @@
             self.randomRobot = boughtRobots[Math.floor(Math.random() * boughtRobots.length)];
           }
         }
-      })
+      });
+
+      self.showAds = storage.getValue('showAds');
+      
+      if (self.showAds) {
+        const ad = document.createElement('script');
+
+        ad.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js';
+        ad.async = true;
+
+        ad.onload = () => {
+          (adsbygoogle = window.adsbygoogle || []).push({});
+        };
+        document.head.appendChild(ad);
+      }
     },
     beforeDestroy() {
       clearInterval(this.fetchInterval);
