@@ -464,6 +464,55 @@ EVNotify.prototype.buyRobot = function (robotID, orderID, callback) {
     return self;
 };
 
+/**
+ * Function to list all cats for associated AKey and provided tag
+ * @param  {Function} callback  callback function
+ * @return {Object}             returns this
+ */
+EVNotify.prototype.getCats = function (tag, callback) {
+    var self = this;
+
+    // check authentication
+    if (!self.akey || !self.token) {
+        if (typeof callback === 'function') callback(401, null); // missing previous login request
+    } else {
+        sendRequest('get', 'cats', {
+            akey: self.akey,
+            token: self.token,
+            tag: tag
+        }, function (err, res) {
+            if (typeof callback === 'function') callback(err, res && res.data ? res.data : null);
+        });
+    }
+
+    return self;
+};
+
+/**
+ * Function to buy a cat for AKey
+ * @param  {Function} callback  callback function
+ * @return {Object}             returns this
+ */
+EVNotify.prototype.buyCat = function (catID, orderID, callback) {
+    var self = this;
+
+    // check authentication
+    if (!self.akey || !self.token) {
+        if (typeof callback === 'function') callback(401, null); // missing previous login request
+    } else {
+        sendRequest('post', 'cat', {
+            akey: self.akey,
+            token: self.token,
+            catID: catID,
+            orderID: orderID
+        }, function (err, res) {
+            if (typeof callback === 'function') callback(err, (!!(!err && res)));
+        });
+    }
+
+    return self;
+};
+
 export default function EVNotify(akey, token) {
     // prevent wrong declaration
     if (!(this instanceof EVNotify) || this.__previouslyConstructedByEVNotify) throw new Error('EVNotify must be called as constructor. Missing new keyword?');

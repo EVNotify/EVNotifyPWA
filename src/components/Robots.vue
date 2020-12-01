@@ -34,7 +34,7 @@
                             of robots in the background needs to work very hard, in order to provide the services at any
                             time. To keep up all the services, more and more robots are needed over time. Can you help,
                             extending the collection? With that, you support the development of EVNotify and furthermore
-                            you make a robot happy! <br>Over time, more and more robots will appear here. So stay tuned!</span>
+                            you make a robot happy! <br>Over time, more and more robots will appear here. So stay tuned! <br><i>Robots lovingly delivered by Robohash.org</i></span>
                     </div>
                 </v-card-title>
                 <v-card-text>

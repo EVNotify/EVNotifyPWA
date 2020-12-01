@@ -32,6 +32,11 @@ export default new Router({
       component: () => import(/* webpackChunkName: "robots" */ './views/Robots.vue')
     },
     {
+      path: '/catlender',
+      name: 'catlender',
+      component: () => import(/* webpackChunkName: "catlender" */ './views/Catlender.vue')
+    },
+    {
       path: '/settings',
       name: 'settings',
       component: () => import(/* webpackChunkName: "settings" */ './views/Settings.vue')

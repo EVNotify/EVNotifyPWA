@@ -205,6 +205,10 @@
                 </v-list-tile>
             </v-list>
             <v-divider class="mt-1 mb-3"></v-divider>
+            <v-list subheader>
+              <v-subheader @click="$router.push('/catlender')">*** Advent Ca(t)lender ***</v-subheader>
+            </v-list>
+            <v-divider class="mt-1 mb-3"></v-divider>
             <v-list two-line subheader>
               <v-subheader>Random robot of the day</v-subheader>
                 <v-list-tile avatar @click="$router.push('/robots')" :class="{'last-tile': !syncData.last_location}">
