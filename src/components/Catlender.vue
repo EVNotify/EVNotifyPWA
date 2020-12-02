@@ -104,7 +104,7 @@
             },
             hasRequiredCat(currentCat) {
                 if (currentCat.required_cat) {
-                    return this.cats.some((cat) => cat.bought && currentCat.id === cat.required_cat);
+                    return this.cats.some((cat) => cat.bought && cat.id === currentCat.required_cat);
                 }
                 return true;
             },
