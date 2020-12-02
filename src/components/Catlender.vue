@@ -102,9 +102,9 @@
             catPIC(id) {
                 return `https://robohash.org/${id}?set=set4`;
             },
-            hasRequiredCat(cat) {
-                if (cat.required_cat) {
-                    return this.cats.some((cat) => cat.id === cat.required_cat);
+            hasRequiredCat(currentCat) {
+                if (currentCat.required_cat) {
+                    return this.cats.some((cat) => cat.bought && currentCat.id === cat.required_cat);
                 }
                 return true;
             },
