@@ -60,7 +60,7 @@
                                     <div class="caption" v-if="log.charge">charged: {{ (endCEC - startCEC || 0).toFixed(1) }} kWh</div>
                                     <div class="caption" v-else>consumed: {{ (endCED - startCED || 0).toFixed(1)}} kWh<br>recuperated: {{ (endCEC - startCEC || 0).toFixed(1) }} kWh</div>
                                 </div>
-                                <div class="caption" v-if="!log.charge">Ø {{ avgSpeed }} km/h | {{ distance }} km driven</div>
+                                <div class="caption" v-if="!log.charge">Ø {{ ((((endCED - startCED) - (endCEC - startCEC)) || 0) / distance * 100).toFixed(1) }} kWh/100km | Ø {{ avgSpeed }} km/h | {{ distance }} km driven</div>
                             </v-flex>
                         </v-timeline-item>
                         <v-timeline-item class="mb-3" small color="accent">
