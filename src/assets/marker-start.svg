@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="36" height="60" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <!-- size: 88x150 -->
+        <path id="marker"
+              fill="green"
+              stroke="black"
+              d="M87,43C87,67,64,110,44,150C27,110,1,67,1,43C1,19,20,0,44,0C68,8e-8,87,19,87,43Z"
+        />
+    </defs>
+    <use href="#marker" transform="scale(0.4)" />
+</svg>
