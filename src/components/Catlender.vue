@@ -17,7 +17,7 @@
                         </v-card-text>
                         <v-card-actions>
                             <v-spacer></v-spacer>
-                            <v-btn color="green darken-1" flat @click="showPaymentDialog = false; bought = false">Cancel</v-btn>
+                            <v-btn color="green darken-1" flat @click="showPaymentDialog = false; bought = false">Close</v-btn>
                         </v-card-actions>
                     </v-card>
                 </v-dialog>
@@ -37,13 +37,14 @@
                 </v-card>
             </v-dialog>
             <!-- Content -->
-            <v-card>
+            <v-card v-if="!showUnlocked">
                 <v-img :src="christmasCatIMG" max-height="200" :contain="true"></v-img>
                 <v-card-title primary-title>
                     <div>
                         <p class="caption font-weight-thin text-xs-right" style="float: right">Meow and ho-ho-ho
                         </p>
                         <div class="headline">Advent ca(t)lendar</div>
+                        <v-btn color="success" outline block v-if="hasAllCats" @click="showUnlocked=true">You've unlocked all! Click me!</v-btn>
                         <span><i class="font-weight-light">Everyone needs a cute kitten, right?</i><br>Yes, it's true. Even the <a href="#" @click="$router.push('/robots')">Robots</a> of EVNotify.<br>
                         Developing EVNotify not only costs a lot of time, but also money. For a limited time you now have the possibility to support the development.<br>
                         With cute cats! How it works? From 1st to 24th of December you can open a new door every day.<br>
@@ -73,6 +74,21 @@
                     </v-flex>
                 </v-card-text>
             </v-card>
+            <v-card v-else>
+                <v-img :src="christmasUnlockedIMG" max-height="300" :contain="true"></v-img>
+                <v-card-title primary-title>
+                    <div class="headline">Merry Christmas!</div>
+                    <span style="padding-bottom: 56px;">
+                        2020 was a hard year for everyone. Let's hope things get better very soon.
+                        Stay healthy. Stay happy.
+                        Thank you for all of your support.
+                        You made EVNotify possible.
+                        Very soon a complete new app version will be available.
+                        A lot of work still ahead, but together we can make it.
+                        Merry christmas and thanks!
+                    </span>
+                </v-card-title>
+            </v-card>
         </v-flex>
     </v-layout>
 </template>
@@ -84,11 +100,18 @@
             bought: false,
             showPaymentDialog: false,
             showWisdomDialog: false,
+            showUnlocked: false,
             cats: []
         }),
         computed: {
             christmasCatIMG() {
                 return require('../assets/christmas_cat.svg');
+            },
+            christmasUnlockedIMG() {
+                return require('../assets/christmas_car.png');
+            },
+            hasAllCats() {
+                return this.cats.filter((cat) => cat.tag === 'christmas_2020' && cat.bought).length === 24;
             }
         },
         methods: {
