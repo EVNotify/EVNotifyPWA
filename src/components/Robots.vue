@@ -108,7 +108,18 @@
                         return actions.order.create({
                             purchase_units: [{
                                 amount: {
-                                    value: '2.49'
+                                    value: '2.49',
+                                    currency_code: 'EUR',
+                                    breakdown: {
+                                        item_total: {
+                                            currency_code: 'EUR',
+                                            value: '2.09'
+                                        },
+                                        tax_total: {
+                                            currency_code: 'EUR',
+                                            value: '0.40'
+                                        }
+                                    }
                                 },
                                 description: 'EVNotify Robot'
                             }]

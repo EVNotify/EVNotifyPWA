@@ -60,7 +60,7 @@
                             <v-container grid-list-sm fluid>
                                 <v-layout row wrap>
                                     <v-flex v-for="cat in cats" :key="cat.id" xs4 d-flex>
-                                        <v-card flat tile class="d-flex cat-door" @click="hasRequiredCat(cat) ? cat.bought ? showCat(cat) : buyCat(cat) : ''">
+                                        <v-card flat tile class="d-flex cat-door" @click="hasRequiredCat(cat) && cat.bought ? showCat(cat) : ''">
                                             <v-layout fill-height align-center justify-center ma-0 v-if="!cat.bought">
                                                 <h1>{{ new Date(cat.release_date * 1000).getDate() }}</h1>
                                             </v-layout>
