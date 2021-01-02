@@ -259,6 +259,7 @@
   import storage from '../utils/storage';
   import cars from '../utils/cars';
   import general from '../utils/general';
+  import EvNotifyMap from "../utils/EvNotifyMap";
 
   export default {
     data: () => ({
@@ -410,29 +411,9 @@
         return `${this.$root.MomentJS(end).format('MMMM Do YYYY')} ${this.$root.MomentJS(start).format('HH:mm')}-${this.$root.MomentJS(end).format('HH:mm')}`
       },
       showLastPosition() {
-        const markerLocation = {
-          lat: this.syncData.latitude,
-          lng: this.syncData.longitude
-        };
-
         if (!this.showMap || !this.syncData.last_location || !this.syncData.latitude || !this.syncData.longitude) return;
-        // eslint-disable-next-line
-        const map = new google.maps.Map(this.$refs.map, {
-          zoom: 14,
-          center: markerLocation
-        });
-        // eslint-disable-next-line
-        const infoWindow = new google.maps.InfoWindow({
-          content: `Last location from ${this.lastLocationTimestamp}`
-        });
-        // eslint-disable-next-line
-        const marker = new google.maps.Marker({
-          position: markerLocation,
-          map,
-          title: 'Last location'
-        });
-
-        marker.addListener('click', () => infoWindow.open(map, marker));
+        new EvNotifyMap(this.$refs.map)
+            .addLastLocation([this.syncData.longitude, this.syncData.latitude], this.lastLocationTimestamp);
       }
     },
     watch: {

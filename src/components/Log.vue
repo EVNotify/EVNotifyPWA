@@ -112,6 +112,7 @@
 
 <script>
     import { Line } from 'vue-chartjs';
+    import EvNotifyMap from '../utils/EvNotifyMap';
 
     export default {
         data: () => ({
@@ -330,15 +331,6 @@
                     })
                 });
                 return dataObj;
-            },
-            mapData() {
-                const self = this;
-                const stats = [...self.log.stats].sort((a, b) => a.timestamp - b.timestamp);
-
-                return stats.filter((stat) => stat.latitude != null && stat.longitude != null).map((stat) => ({
-                    lat: stat.latitude,
-                    lng: stat.longitude
-                }));
             }
         },
         created() {
@@ -346,8 +338,9 @@
         },
         mounted() {
             const self = this;
-
-            this.$root.EVNotify.getLog(this.id, (err, log) => {
+            /** @type {EVNotify} */
+            const evNotify = this.$root.EVNotify;
+            evNotify.getLog(this.id, (err, log) => {
                 if (!err && log) {
                     self.log = log;
                     self.originalTitle = log.title;
@@ -369,67 +362,11 @@
                     if (!self.$refs.map) return;
                     setTimeout(() => {
                         self.$nextTick(() => {
-                            const data = self.mapData;
-
-                            if (!data.length) return self.validCoords = false;
-                            self.validCoords = true;
-                            // eslint-disable-next-line
-                            const bounds = new google.maps.LatLngBounds();
-                            
-                            data.forEach((latLng) => bounds.extend(latLng));
-                            
-                            // eslint-disable-next-line
-                            const map = new google.maps.Map(self.$refs.map, {
-                                zoom: 10,
-                                center: bounds.getCenter()
-                            });
-
-                            // eslint-disable-next-line
-                            const polyline = new google.maps.Polyline({
-                                path: self.mapData,
-                                geodesic: true,
-                                strokeColor: '#FF0000',
-                                strokeOpacity: 1.0,
-                                strokeWeight: 2
-                            });
-
-                            polyline.setMap(map);
-
-                            // eslint-disable-next-line
-                            const startMarker = new google.maps.Marker({
-                                position: data[0],
-                                label: 'S',
-                                map
-                            });
-
-                            // eslint-disable-next-line
-                            const startInfoWindow = new google.maps.InfoWindow({
-                                content: `Start point from ${this.startTime}`
-                            });
-
-                            startMarker.addListener('click', () => {
-                                endInfoWindow.close();
-                                // eslint-disable-next-line
-                                startInfoWindow.open(map, startMarker);
-                            });
-
-                            // eslint-disable-next-line
-                            const endMarker = new google.maps.Marker({
-                                position: data[data.length -1],
-                                label: 'E',
-                                map
-                            });
-
-                            // eslint-disable-next-line
-                            const endInfoWindow = new google.maps.InfoWindow({
-                                content: `End point from ${this.endTime}`
-                            });
-
-                            endMarker.addListener('click', () => {
-                                startInfoWindow.close();
-                                // eslint-disable-next-line
-                                endInfoWindow.open(map, endMarker);
-                            });
+                            self.validCoords = !log.stats.every(v => v.latitude == null || v.longitude == null);
+                            if (!self.validCoords) {
+                              return;
+                            }
+                            new EvNotifyMap(self.$refs.map).addLog(log);
                         });
                     });
                 }
