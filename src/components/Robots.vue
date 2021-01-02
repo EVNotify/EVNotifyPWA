@@ -30,7 +30,8 @@
                         <p class="caption font-weight-thin text-xs-right" style="float: right">1111100010001001010001
                         </p>
                         <div class="headline">Collection</div>
-                        <span><i class="font-weight-light">Did you know?</i><br>Besides the developer of EVNotify, a lot
+                        <span><i class="font-weight-light"><b>It's no longer possible to buy robots. You can still support the development of EVNotify via <a href="http://donate.evnotify.de">donate.evnotify.de</a></b><br>
+                            Did you know?</i><br>Besides the developer of EVNotify, a lot
                             of robots in the background needs to work very hard, in order to provide the services at any
                             time. To keep up all the services, more and more robots are needed over time. Can you help,
                             extending the collection? With that, you support the development of EVNotify and furthermore
@@ -48,9 +49,6 @@
                                     <v-list-tile-title>Some robot</v-list-tile-title>
                                     <v-list-tile-sub-title>I can show my face</v-list-tile-sub-title>
                                 </v-list-tile-content>
-                                <v-list-tile-action>
-                                    <v-icon @click="buyRobot(robot.id)">shopping_cart</v-icon>
-                                </v-list-tile-action>
                             </div>
                             <div v-else class="list-tile-container">
                                 <v-list-tile-avatar>
