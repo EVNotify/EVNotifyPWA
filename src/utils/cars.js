@@ -52,5 +52,11 @@ export default {
         SLOW_SPEED: 2.3,
         NORMAL_SPEED: 22,
         FAST_SPEED: 43
+    },
+    ID_3: {
+        CAPACITY: 58,
+        SLOW_SPEED: 2.3,
+        NORMAL_SPEED: 11,
+        FAST_SPEED: 100
     }
 }

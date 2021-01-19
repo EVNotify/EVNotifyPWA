@@ -242,6 +242,9 @@
                     }, {
                         text: 'Renault Zoe Q210',
                         value: 'ZOE_Q210'
+                    }, {
+                        text: 'VW ID.3',
+                        value: 'ID_3'
                     }]
                 }, {
                     id: 'consumption',
