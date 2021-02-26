@@ -57,7 +57,7 @@
                             <v-flex>
                                 <div class="cadivtion">{{ logDate }}</div>
                                 <div v-if="startCEC || startCED">
-                                    <div class="caption" v-if="log.charge">charged: {{ (endCEC - startCEC || 0).toFixed(1) }} kWh</div>
+                                    <div class="caption" v-if="log.charge">charged: {{ (endCEC - startCEC || 0).toFixed(1) }} kWh {{ startODO ? ' - ' + startODO + ' km (ODO)' : '' }}</div>
                                     <div class="caption" v-else>consumed: {{ (endCED - startCED || 0).toFixed(1)}} kWh<br>recuperated: {{ (endCEC - startCEC || 0).toFixed(1) }} kWh</div>
                                 </div>
                                 <div class="caption" v-if="!log.charge">Ø {{ ((((endCED - startCED) - (endCEC - startCEC)) || 0) / distance * 100).toFixed(1) }} kWh/100km | Ø {{ avgSpeed }} km/h | {{ distance }} km driven</div>
@@ -67,7 +67,7 @@
                             <v-layout justify-space-between>
                                 <v-flex xs-7>
                                     <v-chip class="white--text ml-0" color="accent" label small>Start</v-chip>
-                                    {{ startSOC }}
+                                    {{ startSOC }} {{ !log.charge && startODO ? ' - ' + startODO + ' km (ODO)' : '' }}
                                     <div class="caption" v-if="startCEC || startCED">{{ startCEC }} kWh (CEC) / <br> {{ startCED }} kWh (CED)</div>
                                 </v-flex>
                                 <v-flex xs-5 text-xs-right>{{ startTime }}</v-flex>
@@ -77,7 +77,7 @@
                             <v-layout justify-space-between>
                                 <v-flex xs-7>
                                     <v-chip class="white--text ml-0" color="primary" label small>End</v-chip>
-                                    {{ endSOC }}
+                                    {{ endSOC }} {{ !log.charge && endODO ? ' - ' + endODO + ' km (ODO)' : '' }}
                                     <div class="caption" v-if="endCEC || endCED">{{ endCEC }} kWh (CEC) / <br> {{ endCED }} kWh (CED)</div>
                                 </v-flex>
                                 <v-flex xs-5 text-xs-right>{{ endTime }}</v-flex>
@@ -159,16 +159,16 @@
                 }
                 return soc;
             },
-            getCumulativeFromStats(cumulativeType, type) {
-                let cumulative = 0;
+            getValueFromStats(field, type) {
+                let value = 0;
                 const stats = this.log.stats;
 
                 if (type === 'start') {
                     for (let idX = stats.length - 1; idX >= 0; idX--) {
                         const element = stats[idX];
 
-                        if (element[cumulativeType]) {
-                            cumulative = element[cumulativeType];
+                        if (element[field]) {
+                            value = element[field];
                             break;
                         }
                     }
@@ -176,13 +176,13 @@
                     for (let idX = 0; idX < stats.length; idX++) {
                         const element = stats[idX];
 
-                        if (element[cumulativeType]) {
-                            cumulative = element[cumulativeType];
+                        if (element[field]) {
+                            value = element[field];
                             break;
                         }
                     }
                 }
-                return cumulative;
+                return value;
             },
             save() {
                 const self = this;
@@ -217,17 +217,23 @@
             endSOC() {
                 return this.getSOCFromStats('end') + '%';
             },
+            startODO() {
+                return this.getValueFromStats('odo', 'start');
+            },
+            endODO() {
+                return this.getValueFromStats('odo', 'end');
+            },
             startCEC() {
-                return this.getCumulativeFromStats('cumulative_energy_charged', 'start');
+                return this.getValueFromStats('cumulative_energy_charged', 'start');
             },
             endCEC() {
-                return this.getCumulativeFromStats('cumulative_energy_charged', 'end');
+                return this.getValueFromStats('cumulative_energy_charged', 'end');
             },
             startCED() {
-                return this.getCumulativeFromStats('cumulative_energy_discharged', 'start');
+                return this.getValueFromStats('cumulative_energy_discharged', 'start');
             },
             endCED() {
-                return this.getCumulativeFromStats('cumulative_energy_discharged', 'end');
+                return this.getValueFromStats('cumulative_energy_discharged', 'end');
             },
             avgKW() {
                 const powers = this.log.stats.filter((stat) => stat.dc_battery_power != null)
