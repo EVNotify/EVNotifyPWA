@@ -84,14 +84,14 @@
                     <v-list-tile-content>
                       <v-list-tile-title>
                         <p class="temperature-text" :style="{color: getTemperatureColor(syncData.battery_min_temperature)}">
-                          {{ syncData.battery_min_temperature || 0 }}
+                          {{ parseInt(syncData.battery_min_temperature) || 0 }}
                         </p> /
                         <p class="temperature-text" :style="{color: getTemperatureColor(syncData.battery_max_temperature)}">
-                          {{ syncData.battery_max_temperature || 0 }}
+                          {{ parseInt(syncData.battery_max_temperature) || 0 }}
                         </p> /
                         <p class="temperature-text"
                           :style="{color: getTemperatureColor(syncData.battery_inlet_temperature)}">
-                          {{ syncData.battery_inlet_temperature || 0 }}
+                          {{ parseInt(syncData.battery_inlet_temperature) || 0 }}
                         </p> °C
                       </v-list-tile-title>
                       <v-list-tile-sub-title>Min / Max / Inlet</v-list-tile-sub-title>
