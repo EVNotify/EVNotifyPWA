@@ -91,6 +91,7 @@
                 <v-card-title class="headline">ABRP integration</v-card-title>
                 <v-card-text v-if="localSettings.abrp">
                     You have linked your account with <a href="https://abetterrouteplanner.com">A better route planner</a>.
+                    You can get one month Premium for free with this <a href="https://abetterrouteplanner.com/ref/EVNOTIFY">link</a>.
                 </v-card-text>
                 <v-card-text v-else>
                     In order to automatically share your realtime data with "A better route planner" (short: ABRP),
@@ -99,6 +100,7 @@
                     EVNotify does not have control about your data, once shared with others.
                     Please refer to their <a href="https://iternio.com/index.php/integrity-policy/">Privacy policy</a>.
                     With granting permissions, you automatically accept these guidelines.
+                    You can get one month Premium for free with this <a href="https://abetterrouteplanner.com/ref/EVNOTIFY">link</a>.
                     Would you like to integrate ABRP with EVNotify?
                 </v-card-text>
                 <v-card-actions v-if="localSettings.abrp">
