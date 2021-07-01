@@ -2,7 +2,7 @@
     <v-layout justify-center>
         <v-flex xs12 sm12 md6>
             <v-card>
-                <v-list two-line subheader v-if="loaded && Object.keys(logs).length">
+                <v-list three-line subheader v-if="loaded && Object.keys(logs).length">
                     <div v-for="(month, index) in logs" :key="index">
                         <v-subheader inset>{{ convertSubHeader(index) }}</v-subheader>
                         <v-list-tile v-for="log in logs[index]" :key="log.id" avatar @click="$router.push({name: 'log', query: {id: log.id}})">
@@ -11,9 +11,11 @@
                             </v-list-tile-avatar>
                             <v-list-tile-content>
                                 <v-list-tile-title>{{ log.title }}</v-list-tile-title>
+                                <v-list-tile-sub-title>{{ setSubtitle(log) }}</v-list-tile-sub-title>
                                 <v-list-tile-sub-title>{{ convertDates(log.start, log.end) }}</v-list-tile-sub-title>
                             </v-list-tile-content>
                             <v-list-tile-action>
+                                <v-list-tile-action-text>{{ setActionText(log) }}</v-list-tile-action-text>
                                 <v-btn icon ripple @click="$router.push({name: 'log', query: {id: log.id}})">
                                     <v-icon color="grey lighten-1">info</v-icon>
                                 </v-btn>
@@ -58,6 +60,34 @@
                 end = new Date(end * 1000);
 
                 return `${this.$root.MomentJS(end).format('MMMM Do YYYY')} ${this.$root.MomentJS(start).format('HH:mm')}-${this.$root.MomentJS(end).format('HH:mm')}`
+            },
+            setSubtitle(log) {
+                let text = '';
+
+                if (log.start_soc && log.end_soc) {
+                    text = `${log.start_soc}% -> ${log.end_soc}%`;
+                }
+
+                if (!log.charge && log.distance && log.start_cec && log.end_cec && log.start_ced && log.end_ced) {
+                    const consumption = ((((log.end_ced - log.start_ced) - (log.end_cec - log.start_cec)) || 0) / log.distance * 100).toFixed(1);
+
+                    text += ` (Ø ${consumption} kWh/100km)`;
+                } else if (log.charge && log.start_cec && log.end_cec) {
+                    const charged = (log.end_cec - log.start_cec || 0).toFixed(1);
+
+                    text += ` (${charged} kWh)`;
+                }
+                
+                return text;
+            },
+            setActionText(log) {
+                if (log.charge && log.average_kw) {
+                    return `Ø ${log.average_kw} kW`;
+                } else if (!log.charge && log.distance) {
+                    return `~ ${log.distance} km`;
+                }
+
+                return '';
             }
         },
         mounted() {
