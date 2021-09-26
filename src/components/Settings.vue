@@ -487,7 +487,7 @@
             },
             unlinkABRP() {
                 var self = this;
-debugger;
+
                 self.$root.EVNotify.unlinkABRP(() => self.loadSettings());
             }
         },
