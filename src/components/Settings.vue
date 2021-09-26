@@ -92,6 +92,8 @@
                 <v-card-text v-if="localSettings.abrp">
                     You have linked your account with <a href="https://abetterrouteplanner.com">A better route planner</a>.
                     You can get one month Premium for free with this <a href="https://abetterrouteplanner.com/ref/EVNOTIFY">link</a>.
+                    Alternatively you can unlink your integration - this will remove the linking, but not transferred data.
+                    You can link again at any time afterwards.
                 </v-card-text>
                 <v-card-text v-else>
                     In order to automatically share your realtime data with "A better route planner" (short: ABRP),
@@ -105,6 +107,7 @@
                 </v-card-text>
                 <v-card-actions v-if="localSettings.abrp">
                     <v-spacer></v-spacer>
+                    <v-btn color="red" flat @click="abrpDialog = false; unlinkABRP()">Unlink</v-btn>
                     <v-btn color="teal" flat @click="abrpDialog = false">Close</v-btn>
                 </v-card-actions>
                 <v-card-actions v-else>
@@ -481,6 +484,11 @@
                 const user = Storage.getValue('user', {});
 
                 window.open(`https://abetterrouteplanner.com/oauth/auth?client_id=8&redirect_uri=https://app.evnotify.de/integrations/abrp/auth/${user.akey}/${user.token}`, '_blank');
+            },
+            unlinkABRP() {
+                var self = this;
+debugger;
+                self.$root.EVNotify.unlinkABRP(() => self.loadSettings());
             }
         },
         mounted() {
