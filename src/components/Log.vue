@@ -212,42 +212,47 @@
                 return this.$root.MomentJS(new Date(this.log.start * 1000)).format('MMMM Do YYYY');
             },
             startSOC() {
-                return this.getSOCFromStats('start') + '%';
+                return (this.log.start_soc || this.getSOCFromStats('start')) + '%';
             },
             endSOC() {
-                return this.getSOCFromStats('end') + '%';
+                return (this.log.end_soc || this.getSOCFromStats('end')) + '%';
             },
             startODO() {
-                return this.getValueFromStats('odo', 'start');
+                return this.log.start_odo || this.getValueFromStats('odo', 'start');
             },
             endODO() {
-                return this.getValueFromStats('odo', 'end');
+                return this.log.end_odo || this.getValueFromStats('odo', 'end');
             },
             startCEC() {
-                return this.getValueFromStats('cumulative_energy_charged', 'start');
+                return this.log.start_cec || this.getValueFromStats('cumulative_energy_charged', 'start');
             },
             endCEC() {
-                return this.getValueFromStats('cumulative_energy_charged', 'end');
+                return this.log.end_cec || this.getValueFromStats('cumulative_energy_charged', 'end');
             },
             startCED() {
-                return this.getValueFromStats('cumulative_energy_discharged', 'start');
+                return this.log.start_ced || this.getValueFromStats('cumulative_energy_discharged', 'start');
             },
             endCED() {
-                return this.getValueFromStats('cumulative_energy_discharged', 'end');
+                return this.log.end_ced || this.getValueFromStats('cumulative_energy_discharged', 'end');
             },
             avgKW() {
+                if (this.log.average_kw) return this.log.average_kw;
+
                 const powers = this.log.stats.filter((stat) => stat.dc_battery_power != null)
                     .map((stat) => stat.dc_battery_power);
 
                 return Math.abs(parseFloat((powers.reduce((a, b) => a + b, 0) / powers.length) || 0).toFixed(2));
             },
             avgSpeed() {
+                if (this.log.average_speed) return this.log.average_speed;
+
                 const speeds = this.log.stats.filter((stat) => stat.gps_speed != null)
                     .map((stat) => stat.gps_speed);
 
                 return Math.abs((parseFloat((speeds.reduce((a, b) => a + b, 0) / speeds.length) || 0) * 3.6).toFixed(2));
             },
             distance() {
+                if (this.log.distance) return this.log.distance;
                 return (this.avgSpeed * ((this.log.end - this.log.start) / 3600) || 0).toFixed(2);
             },
             kWChartValues() {
