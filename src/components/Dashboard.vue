@@ -388,7 +388,9 @@
         const now = parseInt(new Date() / 1000);
         const lastUpdate = this.getLastUpdate();
 
-        if(!lastUpdate) {
+        if (!this.syncData.last_soc) {
+          this.dataOutdatedMessage = 'Data is loading. Please wait for dashboard to update';
+        } else if(!lastUpdate) {
           this.dataOutdatedMessage = `There has never been a connection to a car. Please connect your car first time.`
         } else {
           this.dataOutdatedMessage =
