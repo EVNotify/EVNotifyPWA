@@ -206,26 +206,7 @@
             </v-list>
             <v-divider class="mt-1 mb-3"></v-divider>
             <v-list subheader>
-              <v-subheader @click="$router.push('/catlender')">*** Advent Ca(t)lender ***</v-subheader>
-            </v-list>
-            <v-divider class="mt-1 mb-3"></v-divider>
-            <v-list two-line subheader>
-              <v-subheader>Random robot of the day</v-subheader>
-                <v-list-tile avatar @click="$router.push('/robots')" :class="{'last-tile': !syncData.last_location}">
-                  <v-list-tile-avatar>
-                    <v-icon v-if="!randomRobot.id">help</v-icon>
-                    <v-img v-else :src="randomRobotAvatar"></v-img>
-                  </v-list-tile-avatar>
-                  <v-list-tile-content>
-                    <v-list-tile-title v-if="!randomRobot.id" class="quote-title">No robot yet. They are waiting here, if you click me.</v-list-tile-title>
-                    <v-list-tile-title v-else class="quote-title">{{ randomRobot.quote }}</v-list-tile-title>
-                  </v-list-tile-content>
-                  <v-list-tile-action>
-                    <v-btn icon ripple @click="$router.push('/robots')">
-                      <v-icon color="grey lighten-1">info</v-icon>
-                    </v-btn>
-                  </v-list-tile-action>
-                </v-list-tile>
+              <v-img :src="adImg" max-height="200" :contain="true" @click="openAd()" style="cursor: pointer;"></v-img>
             </v-list>
             <v-divider v-if="syncData.last_location" class="mt-1 mb-3"></v-divider>
             <v-list two-line subheader v-if="syncData.last_location">
@@ -297,6 +278,9 @@
       log: {}
     }),
     computed: {
+      adImg() {
+          return require('../assets/handmade-ad.jpg');
+      },
       randomRobotAvatar() {
         return `https://robohash.org/${this.randomRobot.id}`;
       },
@@ -350,6 +334,9 @@
       }
     },
     methods: {
+      openAd() {
+        window.open('https://mimiluclay.de', '_blank', 'noreferrer');
+      },
       getTemperatureColor(temperature) {
         if(storage.getValue('darkMode', false) == true) {
           if (temperature < 20) return 'deepskyblue';
@@ -467,6 +454,7 @@
         ad.async = true;
 
         ad.onload = () => {
+          // eslint-disable-next-line
           (adsbygoogle = window.adsbygoogle || []).push({});
         };
         document.head.appendChild(ad);
