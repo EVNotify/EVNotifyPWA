@@ -25,7 +25,7 @@
                     <p>{{ syncData.soc_display || syncData.soc_bms }} %</p>
                   </div>
                   <div v-if="syncData.charging" class="centerchargeicon">
-                    <v-icon color="primary">flash_on</v-icon>
+                    <v-icon :color="primaryColor">flash_on</v-icon>
                   </div>
                 </v-progress-circular>
                 <v-btn class="socexplainationmodal" icon ripple @click="showSOCExplaination = true">
@@ -38,7 +38,7 @@
                 <v-list>
                   <v-list-tile>
                     <v-list-tile-action>
-                      <v-icon color="teal">flash_on</v-icon>
+                      <v-icon :color="primaryColor">flash_on</v-icon>
                     </v-list-tile-action>
                     <v-list-tile-content>
                       <v-list-tile-title :style="{color: powerAmountColor}">{{ powerAmount }} kW</v-list-tile-title>
@@ -47,7 +47,7 @@
                   </v-list-tile>
                   <v-list-tile v-if="isSupportedCar()">
                     <v-list-tile-action>
-                      <v-icon color="teal">drive_eta</v-icon>
+                      <v-icon :color="primaryColor">drive_eta</v-icon>
                     </v-list-tile-action>
                     <v-list-tile-content>
                       <v-list-tile-title :style="{color: currentRangeColor}">{{ currentRange }} / {{ totalRange }} km</v-list-tile-title>
@@ -56,7 +56,7 @@
                   </v-list-tile>
                   <v-list-tile v-if="syncData.charging && isSupportedCar()">
                     <v-list-tile-action>
-                      <v-icon color="teal">schedule</v-icon>
+                      <v-icon :color="primaryColor">schedule</v-icon>
                     </v-list-tile-action>
                     <v-list-tile-content>
                       <v-list-tile-title>{{ chargingTimeLeft }} hours left</v-list-tile-title>
@@ -79,7 +79,7 @@
                 <v-flex xs6>
                   <v-list-tile>
                     <v-list-tile-action>
-                      <v-icon color="teal">ac_unit</v-icon>
+                      <v-icon :color="primaryColor">ac_unit</v-icon>
                     </v-list-tile-action>
                     <v-list-tile-content>
                       <v-list-tile-title>
@@ -102,7 +102,7 @@
                   <v-subheader class="odo-subheader">ODO</v-subheader>
                   <v-list-tile>
                     <v-list-tile-action>
-                      <v-icon color="teal">drive_eta</v-icon>
+                      <v-icon :color="primaryColor">drive_eta</v-icon>
                     </v-list-tile-action>
                     <v-list-tile-content>
                       <v-list-tile-title>{{ syncData.odo || 0 }} km</v-list-tile-title>
@@ -116,7 +116,7 @@
                 <v-flex xs6>
                   <v-list-tile>
                     <v-list-tile-action>
-                      <v-icon color="teal">battery_charging_full</v-icon>
+                      <v-icon :color="primaryColor">battery_charging_full</v-icon>
                     </v-list-tile-action>
                     <v-list-tile-content>
                       <v-list-tile-title>{{ syncData.dc_battery_voltage || 0 }} V</v-list-tile-title>
@@ -127,7 +127,7 @@
                 <v-flex xs6>
                   <v-list-tile>
                     <v-list-tile-action>
-                      <v-icon color="teal">power</v-icon>
+                      <v-icon :color="primaryColor">power</v-icon>
                     </v-list-tile-action>
                     <v-list-tile-content>
                       <v-list-tile-title>{{ syncData.dc_battery_current || 0 }} A</v-list-tile-title>
@@ -138,7 +138,7 @@
               </v-layout>
               <v-list-tile class="double-line" v-if="syncData.cumulative_energy_charged > 0 || syncData.cumulative_energy_discharged > 0">
                 <v-list-tile-action>
-                  <v-icon color="teal">battery_unknown</v-icon>
+                  <v-icon :color="primaryColor">battery_unknown</v-icon>
                 </v-list-tile-action>
                 <v-list-tile-content>
                   <v-list-tile-title>{{ syncData.cumulative_energy_charged || 0 }} kWh / {{ syncData.cumulative_energy_discharged || 0 }} kWh </v-list-tile-title>
@@ -150,7 +150,7 @@
                 <v-flex xs6>
                   <v-list-tile>
                     <v-list-tile-action>
-                      <v-icon color="teal">favorite</v-icon>
+                      <v-icon :color="primaryColor">favorite</v-icon>
                     </v-list-tile-action>
                     <v-list-tile-content>
                       <v-list-tile-title>{{ syncData.soh || 0 }} %</v-list-tile-title>
@@ -161,7 +161,7 @@
                 <v-flex xs6>
                   <v-list-tile>
                     <v-list-tile-action>
-                      <v-icon color="teal">flash_auto</v-icon>
+                      <v-icon :color="primaryColor">flash_auto</v-icon>
                     </v-list-tile-action>
                     <v-list-tile-content>
                       <v-list-tile-title>{{ syncData.aux_battery_voltage || 0 }} V</v-list-tile-title>
@@ -191,7 +191,7 @@
               <v-subheader>Latest log</v-subheader>
                 <v-list-tile avatar @click="$router.push({name: 'log', query: {id: log.id}})">
                   <v-list-tile-avatar>
-                    <v-icon class="teal lighten-1 white--text">{{ convertIcon(log.charge) }}</v-icon>
+                    <v-icon :class="iconColor">{{ convertIcon(log.charge) }}</v-icon>
                   </v-list-tile-avatar>
                   <v-list-tile-content>
                     <v-list-tile-title>{{ log.title }}</v-list-tile-title>
@@ -214,7 +214,7 @@
               <p class="caption last-location-timestamp">Last updated: {{ lastLocationTimestamp }}</p>
                 <v-list-tile avatar @click="showMap = true" :class="{'last-tile': syncData.last_location}">
                   <v-list-tile-avatar>
-                    <v-icon>map</v-icon>
+                    <v-icon :class="iconColor">map</v-icon>
                   </v-list-tile-avatar>
                   <v-list-tile-content>
                     <v-list-tile-sub-title class="quote-title">Click to show last location within map. To reduce costs, it's not directly rendered.</v-list-tile-sub-title>
@@ -226,7 +226,7 @@
       </v-card>
       <v-card v-show="showMap" class="main-card">
         <v-container class="btn-container">
-            <v-btn class="primary" @click="showMap = false">Show dashboard</v-btn>
+            <v-btn :class="primaryColor" @click="showMap = false">Show dashboard</v-btn>
         </v-container>
         <div>
             <div id="map" ref="map"></div>
@@ -278,6 +278,12 @@
       log: {}
     }),
     computed: {
+      primaryColor() {
+            return (storage.getValue('darkMode') ? 'primary darken-1' : 'primary');
+      },
+      iconColor() {
+        return this.primaryColor + ' lighten-1 white--text';
+      },
       adImg() {
           return require('../assets/handmade-ad.jpg');
       },
@@ -501,7 +507,6 @@
   .progress-cycle-text-container p {
     margin-bottom: 0;
     text-align: center;
-    color: #009688;
   }
 
   .theme--dark .progress-cycle-container p {

@@ -1,18 +1,18 @@
 <template>
     <v-bottom-nav :value="true" fixed color="transparent" :style="{backgroundColor}">
-        <v-btn flat color="teal" value="Dashboard" to="/">
+        <v-btn flat :color="primaryColor" value="Dashboard" to="/">
             <span>Dashboard</span>
             <v-icon>dashboard</v-icon>
         </v-btn>
-        <v-btn flat color="teal" value="Logs" to="/logs">
+        <v-btn flat :color="primaryColor" value="Logs" to="/logs">
             <span>Logs</span>
             <v-icon>list</v-icon>
         </v-btn>
-        <v-btn flat disabled color="teal" value="Stations">
+        <v-btn flat disabled :color="primaryColor" value="Stations">
             <span>Stations</span>
             <v-icon>ev_station</v-icon>
         </v-btn>
-        <v-btn flat color="teal" value="Settings" to="/settings">
+        <v-btn flat :color="primaryColor" value="Settings" to="/settings">
             <span>Settings</span>
             <v-icon>settings</v-icon>
         </v-btn>
@@ -24,8 +24,13 @@ import { EventBus } from '../utils/event'
 import Storage from '../utils/storage';
     export default {
         data: () => ({
-            backgroundColor: (Storage.getValue('darkMode') ? '#212121' : 'white') + ' !important'
+            backgroundColor: (Storage.getValue('darkMode') ? '#212121' : 'white') + ' !important',
         }),
+        computed: {
+            primaryColor() {
+                return (Storage.getValue('darkMode') ? 'primary darken-1' : 'primary');
+            },
+        },
         mounted() {
             EventBus.$on('darkMode', (useDarkMode) => {
                 this.backgroundColor = (useDarkMode ? '#212121' : 'white') + ' !important';

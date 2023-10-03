@@ -8,7 +8,7 @@
             <v-spacer></v-spacer>
             <v-expand-transition>
                 <div v-show="saved">
-                    <v-btn flat color="teal" class="save-btn" @click="emitSave()">
+                    <v-btn flat :color="primaryColor" class="save-btn" @click="emitSave()">
                         <v-icon>save</v-icon>
                     </v-btn>
                 </div>
@@ -21,6 +21,7 @@
     import {
         EventBus
     } from '../utils/event';
+    import Storage from '../utils/storage';
 
     export default {
         data: () => ({
@@ -30,6 +31,11 @@
             emitSave() {
                 EventBus.$emit('saved');
             }
+        },
+        computed: {
+            primaryColor() {
+                return (Storage.getValue('darkMode') ? 'primary darken-1' : 'primary');
+            },
         },
         mounted() {
             EventBus.$on('save', () => this.saved = true);

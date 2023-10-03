@@ -32,7 +32,7 @@
                 </v-card-text>
                 <v-card-actions>
                     <v-spacer></v-spacer>
-                    <v-btn color="teal" flat
+                    <v-btn :color="primaryColor" flat
                         @click="changePasswordDialog = false; password = newPassword = newPassword2 = ''">No
                     </v-btn>
                     <v-btn color="warning" flat @click="changePassword()">Yes</v-btn>
@@ -60,7 +60,7 @@
                 </v-card-text>
                 <v-card-actions>
                     <v-spacer></v-spacer>
-                    <v-btn color="teal" flat @click="resetTokenDialog = false; password = ''">No</v-btn>
+                    <v-btn :color="primaryColor" flat @click="resetTokenDialog = false; password = ''">No</v-btn>
                     <v-btn color="warning" flat @click="resetToken()">Yes</v-btn>
                 </v-card-actions>
             </v-card>
@@ -82,7 +82,7 @@
                 </v-card-text>
                 <v-card-actions>
                     <v-spacer></v-spacer>
-                    <v-btn color="teal" flat @click="telegramDialog = false">Close</v-btn>
+                    <v-btn :color="primaryColor" flat @click="telegramDialog = false">Close</v-btn>
                 </v-card-actions>
             </v-card>
         </v-dialog>
@@ -108,11 +108,11 @@
                 <v-card-actions v-if="localSettings.abrp">
                     <v-spacer></v-spacer>
                     <v-btn color="red" flat @click="abrpDialog = false; unlinkABRP()">Unlink</v-btn>
-                    <v-btn color="teal" flat @click="abrpDialog = false">Close</v-btn>
+                    <v-btn :color="primaryColor" flat @click="abrpDialog = false">Close</v-btn>
                 </v-card-actions>
                 <v-card-actions v-else>
                     <v-spacer></v-spacer>
-                    <v-btn color="teal" flat @click="abrpDialog = false">Deny</v-btn>
+                    <v-btn :color="primaryColor" flat @click="abrpDialog = false">Deny</v-btn>
                     <v-btn color="warning" flat @click="abrpDialog = false; integrateABRP()">Grant</v-btn>
                 </v-card-actions>
             </v-card>
@@ -177,6 +177,11 @@
     import Storage from '../utils/storage';
 
     export default {
+        computed: {
+            primaryColor() {
+                return (Storage.getValue('darkMode') ? 'primary darken-1' : 'primary');
+            },
+        },
         data: () => ({
             settings: [{
                 title: 'Credentials',
