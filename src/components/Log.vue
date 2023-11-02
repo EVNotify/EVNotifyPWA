@@ -358,6 +358,10 @@
         mounted() {
             const self = this;
 
+            let MapsAPIScript = document.createElement('script');
+            MapsAPIScript.setAttribute('src', 'https://maps.googleapis.com/maps/api/js?key=AIzaSyAKSYlV4PJBbGMju4hFYkFLZLMlscENnWQ"');
+            document.head.appendChild(MapsAPIScript);
+
             this.$root.EVNotify.getLog(this.id, (err, log) => {
                 if (!err && log) {
                     self.log = log;
