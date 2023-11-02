@@ -25,9 +25,7 @@ export default {
     chargeDecimalTime(car, socDisplay, socBMS, batteryPower) {
         const capacity = cars[car].CAPACITY;
         const soc = socDisplay || socBMS;
-        const amountToCharge = capacity - parseFloat(
-            capacity * ((soc === 100) ? 1 : '0.' + ((soc < 10) ? ('0' + parseInt(soc)) : parseInt(soc)))
-        ).toFixed(2) || 0;
+        const amountToCharge = capacity * (1 - (soc / 100)) || 0;
         const decimalTime = parseFloat(
             amountToCharge / (Math.abs(batteryPower) || cars[car].FAST_SPEED)
         ).toFixed(2);
