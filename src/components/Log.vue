@@ -93,10 +93,10 @@
                     @click="showBtnExplaination = true">Why don't I see this immediately?</p>
             </v-card>
             <v-card v-show="showChart">
+                <chart-line ref="chart"></chart-line>
                 <v-container class="btn-container">
                     <v-btn small color="primary" @click="showChart = false">Show summary</v-btn>
                 </v-container>
-                <chart-line ref="chart"></chart-line>
             </v-card>
             <v-card v-show="showMap">
                 <v-container class="btn-container">
@@ -112,6 +112,7 @@
 
 <script>
     import { Line } from 'vue-chartjs';
+    import storage from '../utils/storage';
 
     export default {
         data: () => ({
@@ -288,6 +289,13 @@
                 return avgValues.reverse();
 
             },
+            sparklinecolor() {
+                if(storage.getValue('darkMode', false) == true) {
+                    return "white";
+                }
+                else
+                    return "black";
+            },
             chartData() {
                 const self = this;
                 const stats = [...self.log.stats].sort((a, b) => a.timestamp - b.timestamp);
@@ -306,7 +314,7 @@
                 }, {
                     label: 'DC Battery Power',
                     key: 'dc_battery_power',
-                    color: 'darkgreen'
+                    color: 'green'
                 }, {
                     label: 'Battery temperature (Min)',
                     key: 'battery_min_temperature',
@@ -370,9 +378,20 @@
                                     xAxes: [{
                                         ticks: {
                                             autoSkip: true,
-                                            maxTicksLimit: 15
+                                            maxTicksLimit: 15,
+                                            fontColor: this.sparklinecolor
                                         }
-                                    }]   
+                                    }],
+                                    yAxes: [{
+                                        ticks:{
+                                            fontColor: this.sparklinecolor
+                                        }
+                                    }]
+                                },
+                                legend: {
+                                    labels: {
+                                        fontColor: this.sparklinecolor
+                                    }
                                 }
                             });
                         });
