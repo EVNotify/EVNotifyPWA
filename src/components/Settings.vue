@@ -488,7 +488,7 @@
             integrateABRP() {
                 const user = Storage.getValue('user', {});
 
-                window.open(`https://abetterrouteplanner.com/oauth/auth?client_id=8&redirect_uri=https://app.evnotify.de/integrations/abrp/auth/${user.akey}/${user.token}`, '_blank');
+                window.open(`https://abetterrouteplanner.com/oauth/auth?client_id=8&scope=set_telemetry&response_type=code&redirect_uri=https://app.evnotify.de/integrations/abrp/auth/${user.akey}/${user.token}`, '_blank');
             },
             unlinkABRP() {
                 var self = this;
