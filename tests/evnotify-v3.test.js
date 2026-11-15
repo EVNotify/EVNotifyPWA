@@ -71,6 +71,42 @@ assert.strictEqual(syncResults.length, 3);
 assert.strictEqual(syncResults[0].soc_bms, 42);
 assert.strictEqual(syncResults[0].cumulative_energy_charged, 123);
 assert.strictEqual(syncResults[0].last_location, 1767225600);
+// Delayed uploads retain their observation time; malformed/missing times fall back.
+const receivedAt = '2026-01-01T01:00:00.000Z';
+const freshnessCases = [
+  { timestamp: sync.timestamp, expected: 1767225600 },
+  { timestamp: 1767225600, expected: 1767225600 },
+  { timestamp: 1767225600000, expected: 1767225600 },
+  { timestamp: '1767225600', expected: 1767225600 },
+  { timestamp: undefined, expected: 1767229200 },
+  { timestamp: null, expected: 1767229200 },
+  { timestamp: '', expected: 1767229200 },
+  { timestamp: 'invalid', expected: 1767229200 },
+  { timestamp: 0, expected: 1767229200 },
+  { timestamp: -1, expected: 1767229200 },
+  { timestamp: '1969-01-01T00:00:00Z', expected: 1767229200 },
+  { timestamp: 'invalid', updatedAt: 'invalid', expected: 0 }
+];
+for (const sample of freshnessCases) {
+  const readings = [];
+  ['getSOC', 'getExtended', 'getLocation'].forEach(method => client[method]((err, data) => {
+    assert.strictEqual(err, null);
+    readings.push(data);
+  }));
+  take('GET', 'logs/ABC123/last-sync').respond(200, Object.assign({}, sync, { updatedAt: receivedAt }, sample));
+  assert.strictEqual(readings.length, 3);
+  readings.forEach(data => ['last_soc', 'last_extended', 'last_location', 'timestamp'].forEach(field => {
+    assert.strictEqual(data[field], sample.expected, field + ' must follow the valid observation time');
+  }));
+}
+client.getLogHistory('log-1', (err, history) => { assert.strictEqual(err, null); result = history; });
+take('GET', 'logs/ABC123/log-1/history').respond(200, [
+  { timestamp: 'invalid', updatedAt: receivedAt, socDisplay: 50 },
+  Object.assign({}, sync, { updatedAt: receivedAt })
+]);
+assert.strictEqual(result[0].timestamp, 1767229200);
+assert.strictEqual(result[1].timestamp, 1767225600);
+assert.strictEqual(result[1].last_soc, result[1].timestamp);
 client.setSOC(50, 49, (err) => { assert.strictEqual(err, null); });
 const socRequest = take('POST', 'logs/ABC123');
 assert.strictEqual(JSON.parse(socRequest.body).socDisplay, 50);

@@ -338,6 +338,7 @@
         }
       },
       totalRange() {
+        if (this.isV3 && this.settings.consumptionUnit && this.settings.consumptionUnit !== 'kWh') return null;
         return general.range(this.settings.car, this.settings.consumption, this.batteryCapacity);
       },
       rangePerMinute() {

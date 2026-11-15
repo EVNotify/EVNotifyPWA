@@ -152,6 +152,10 @@
                                     :disabled="saving || settingsLoading" :value="element.value" :label="element.title"
                                     @change="element.value = $event; showSaveIcon()">
                                 </v-select>
+                                <v-text-field v-else-if="isV3 && element.id === 'consumption'" :label="element.title"
+                                    type="number" min="0" step="any" :disabled="saving || settingsLoading" :value="element.value"
+                                    :hint="consumptionHint" persistent-hint
+                                    @input="element.value = $event; showSaveIcon()"></v-text-field>
                                 <v-slider v-else-if="element.type === 'slider'" thumb-label="always" :min="element.min"
                                     persistent-hint :hint="element.hint" :label="element.title" :max="element.max"
                                     :disabled="saving || settingsLoading" :value="element.value" :step="element.step"
@@ -189,6 +193,10 @@
     export default {
         computed: {
             v3Cars() { return v3Cars; },
+            consumptionHint() {
+                const unit = this.localSettings.consumptionUnit || 'kWh';
+                return unit === 'kWh' ? 'kWh/100km' : unit;
+            },
             isV3() {
                 return this.$root.EVNotify.version === 'V3';
             },
@@ -413,7 +421,10 @@
                         value: element.value
                     })).forEach((obj) => settings[obj.key] = obj.value);
                 });
-                if (this.isV3) settings.capacity = settings.capacity === '' || settings.capacity == null ? null : Number(settings.capacity);
+                if (this.isV3) {
+                    settings.capacity = settings.capacity === '' || settings.capacity == null ? null : Number(settings.capacity);
+                    if (settings.consumption !== '' && settings.consumption != null) settings.consumption = Number(settings.consumption);
+                }
                 return settings;
             },
             displaySettings(settings) {
@@ -442,6 +453,11 @@
                 const settings = this.retrieveSettings();
                 if (this.isV3 && settings.capacity != null && (!Number.isFinite(settings.capacity) || settings.capacity <= 0)) {
                     this.settingsError = 'Enter a positive battery capacity or leave it empty.';
+                    return;
+                }
+                if (this.isV3 && settings.consumption !== '' && settings.consumption != null &&
+                    (!Number.isFinite(settings.consumption) || settings.consumption <= 0)) {
+                    this.settingsError = 'Enter a positive consumption or leave it empty.';
                     return;
                 }
                 this.saving = true;

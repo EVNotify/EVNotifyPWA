@@ -267,6 +267,20 @@ assert.strictEqual(dashboard.currentRange, 0);
 dashboard.syncData.soc_display = null;
 assert.strictEqual(dashboard.displaySOC, 10);
 assert.strictEqual(dashboard.currentRange, 50);
+dashboard.settings.consumptionUnit = 'Wh';
+assert.strictEqual(dashboard.totalRange, null, 'unsupported units must not produce kWh-based estimates');
+assert.strictEqual(dashboard.currentRange, null);
+assert.strictEqual(dashboard.rangePerMinute, '–');
+dashboard.settings.consumptionUnit = 'kWh';
+assert.strictEqual(dashboard.totalRange, 500);
+dashboard.settings.consumptionUnit = 'unknown';
+assert.strictEqual(dashboard.totalRange, null);
+dashboard.$root.EVNotify.version = 'V2';
+dashboard.settings.car = 'IONIQ_BEV';
+assert.strictEqual(dashboard.totalRange, 186, 'V3 units must not change V2 estimates');
+dashboard.$root.EVNotify.version = 'V3';
+dashboard.settings.car = 'IONIQ_5';
+delete dashboard.settings.consumptionUnit;
 dashboard.settings.capacity = null;
 assert.strictEqual(dashboard.totalRange, null);
 assert.strictEqual(dashboard.rangePerMinute, '–');
@@ -284,6 +298,19 @@ class ControlledXHR {
   }
 }
 const Client = load('src/plugins/evnotify.js', {}, { XMLHttpRequest: ControlledXHR }).default;
+const freshnessClient = new Client('ABC123', 'token', 'V3');
+const freshnessPage = instance(Dashboard, { $root: { EVNotify: freshnessClient, MomentJS: moment } });
+const receivedAt = new Date().toISOString();
+for (const sample of [
+  { timestamp: new Date(Date.now() - 3600000).toISOString(), outdated: true },
+  { timestamp: receivedAt, outdated: false },
+  { timestamp: 'invalid', outdated: false },
+  { timestamp: 'invalid', updatedAt: 'invalid', outdated: true }
+]) {
+  freshnessPage.fetchData();
+  inFlight.shift().respond(200, Object.assign({ socDisplay: 10, updatedAt: receivedAt }, sample));
+  assert.strictEqual(freshnessPage.dataOutdated(), sample.outdated, 'freshness must reflect when telemetry was measured');
+}
 for (const failedLogin of [false, true]) {
   const liveClient = new Client('ABC123', 'old-token', 'V3');
   const root = { EVNotify: liveClient, MomentJS: moment };
@@ -341,4 +368,80 @@ finishHistory(null, []);
 assert.strictEqual(findRetry(view._render()), undefined, 'successful retry removes the warning and button');
 assert.strictEqual(view.log.title, 'Edited');
 view.$destroy(); parent.$destroy();
-console.log('PWA log, settings, vehicle, login, and template regression tests passed');
+
+// Exercise the control selected by the actual Settings template, including its
+// Vuetify value watcher and input event. Script-only mocks miss slider clamping.
+async function testConsumptionControl() {
+  Vue.use(require('vuetify'));
+  let stored = { car: 'IONIQ_5', capacity: 75, consumption: 180, consumptionUnit: 'Wh', soc: 30, email: 'old@example.com' };
+  let saved, writes = 0;
+  const settingsParent = new Vue({ data: { EVNotify: {
+    version: 'V3',
+    getSettings(cb) { cb(null, Object.assign({}, stored)); },
+    setSettings(value, cb) { writes++; saved = value; stored = Object.assign({}, stored, value); cb(null); }
+  } } });
+  const settingsTemplate = compiler.parseComponent(fs.readFileSync(path.join(__dirname, '../src/components/Settings.vue'), 'utf8')).template.content;
+  const form = new Vue(Object.assign({}, Settings, compiler.compileToFunctions(settingsTemplate), { parent: settingsParent }));
+  const findConsumption = node => {
+    const options = node.componentOptions;
+    if (options && options.propsData && options.propsData.label === 'Consumption') return node;
+    return (options && options.children || node.children || []).map(findConsumption).find(Boolean);
+  };
+  let control = findConsumption(form._render());
+  assert.strictEqual(control.componentOptions.Ctor.options.name, 'v-text-field', 'V3 consumption must not use a clamping slider');
+  assert.strictEqual(control.componentOptions.propsData.type, 'number');
+  assert.strictEqual(control.data.attrs.step, 'any');
+  assert.strictEqual(control.data.attrs.max, undefined);
+  const input = new control.componentOptions.Ctor({
+    parent: form, propsData: control.componentOptions.propsData, _parentListeners: control.componentOptions.listeners
+  });
+  form.loadSettings();
+  await Vue.nextTick();
+  control = findConsumption(form._render());
+  input.value = control.componentOptions.propsData.value;
+  await Vue.nextTick();
+  assert.strictEqual(input.internalValue, 180);
+  assert.strictEqual(form.retrieveSettings().consumption, 180);
+  assert.strictEqual(control.componentOptions.propsData.hint, 'Wh');
+  const consumption = form.settings.reduce((all, group) => all.concat(group.elements), []).find(item => item.id === 'consumption');
+  const email = form.settings.reduce((all, group) => all.concat(group.elements), []).find(item => item.id === 'email');
+  email.value = 'changed@example.com';
+  form.saveSettings();
+  assert.strictEqual(saved.email, 'changed@example.com');
+  assert.strictEqual(saved.consumption, 180, 'saving an unrelated setting must preserve consumption');
+  assert.strictEqual(saved.consumptionUnit, 'Wh');
+  for (const unit of ['kWh', 'Wh']) {
+    stored.consumptionUnit = unit;
+    form.loadSettings();
+    assert.strictEqual(form.consumptionHint, unit === 'kWh' ? 'kWh/100km' : 'Wh');
+    for (const value of [5, 35, '180.125']) {
+      input.$emit('input', value);
+      form.saveSettings();
+      assert.strictEqual(saved.consumption, Number(value));
+      assert.strictEqual(saved.consumptionUnit, unit);
+    }
+  }
+  const writesBeforeInvalidEdits = writes;
+  for (const value of ['0', '-1', 'invalid', 'Infinity', ' ']) {
+    input.$emit('input', value);
+    form.saveSettings();
+    assert(form.settingsError.includes('positive consumption'));
+    assert.strictEqual(writes, writesBeforeInvalidEdits, 'invalid edits must not write settings');
+    assert.strictEqual(consumption.value, value, 'failed validation must preserve the edit');
+  }
+  form.localSettings = {};
+  assert.strictEqual(form.consumptionHint, 'kWh/100km', 'legacy settings default to kWh/100km');
+  settingsParent.EVNotify.version = 'V2';
+  control = findConsumption(form._render());
+  assert.strictEqual(control.componentOptions.Ctor.options.name, 'v-slider');
+  assert.strictEqual(control.componentOptions.propsData.min, 8);
+  assert.strictEqual(control.componentOptions.propsData.max, 30);
+  input.$destroy(); form.$destroy(); settingsParent.$destroy();
+}
+
+testConsumptionControl().then(() => {
+  console.log('PWA log, settings, vehicle, login, and template regression tests passed');
+}).catch(error => {
+  console.error(error);
+  process.exitCode = 1;
+});

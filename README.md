@@ -54,6 +54,10 @@ or to override that default for a different battery variant. Charging estimates
 also require measured charging power or an existing model speed default.
 Unavailable inputs are shown as `–` rather than guessed.
 
+V3 consumption values retain their stored unit and are not restricted to a slider
+range. Range estimates currently require `kWh` (kWh/100 km); values in other units
+are preserved, but do not produce range estimates.
+
 ### Verification requiring a test account
 
 The automated suite uses mocked services. The following browser checks still

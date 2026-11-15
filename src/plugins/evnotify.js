@@ -46,11 +46,11 @@ var normalizeKeysToSnake = function (obj) {
 
 var toUnixSeconds = function (value) {
     if (value == null) return 0;
-    if (typeof value === 'number') return Math.floor(value > 100000000000 ? value / 1000 : value);
+    if (typeof value === 'number') return isFinite(value) && value > 0 ? Math.floor(value > 100000000000 ? value / 1000 : value) : 0;
     if (typeof value === 'string') {
         if (/^\d+$/.test(value)) return toUnixSeconds(Number(value));
         var parsed = Date.parse(value);
-        if (!isNaN(parsed)) return Math.floor(parsed / 1000);
+        if (!isNaN(parsed) && parsed > 0) return Math.floor(parsed / 1000);
     }
     return 0;
 };
@@ -62,11 +62,12 @@ var fromV3Sync = function (sync) {
     if (sync.cec != null) result.cumulative_energy_charged = sync.cec;
     if (sync.ced != null) result.cumulative_energy_discharged = sync.ced;
     if (sync.speed != null) result.gps_speed = sync.speed;
-    var updated = toUnixSeconds(sync.updatedAt || sync.timestamp);
-    result.last_soc = updated;
-    result.last_extended = updated;
-    if (sync.latitude != null && sync.longitude != null) result.last_location = updated;
-    result.timestamp = toUnixSeconds(sync.timestamp || sync.updatedAt);
+    // Freshness follows the observation time, including delayed uploads.
+    var timestamp = toUnixSeconds(sync.timestamp) || toUnixSeconds(sync.updatedAt);
+    result.last_soc = timestamp;
+    result.last_extended = timestamp;
+    if (sync.latitude != null && sync.longitude != null) result.last_location = timestamp;
+    result.timestamp = timestamp;
     return result;
 };
 
