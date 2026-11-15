@@ -70,6 +70,18 @@ assert.strictEqual(detail.distance, null);
 assert.strictEqual(detail.chargedEnergy, null);
 assert.strictEqual(detail.consumption, null);
 
+detail.log = { status: 'running', current_soc: 67, stats: [], historyError: 'Offline' };
+assert.strictEqual(detail.endSOC, '67%', 'running summary must use current SOC when history is unavailable');
+detail.log.current_soc = 0;
+assert.strictEqual(detail.endSOC, '0%');
+detail.log.current_soc = null;
+detail.log.stats = samples;
+assert.strictEqual(detail.endSOC, '80%', 'missing current SOC must fall back to history');
+detail.log = { status: 'finished', current_soc: 67, end_soc: 0, stats: samples };
+assert.strictEqual(detail.endSOC, '0%', 'finished logs must use end SOC instead of current SOC');
+delete detail.log.end_soc;
+assert.strictEqual(detail.endSOC, '80%', 'finished logs without end SOC must fall back to history');
+
 let saveCallback, deleteCallback, saveCalls = 0, deleteCalls = 0;
 const routes = [];
 detail.$router = { push: route => routes.push(route) };

@@ -42,7 +42,7 @@ import Storage from '../utils/storage';
 export default {
   components: { BottomNavigation },
   data: () => ({
-    map: null, mapReady: false, mapListener: null, markers: [], routeLine: null,
+    map: null, mapReady: false, mapListener: null, markers: [], routeLine: null, routeKey: null,
     choose: 'point', point: null, start: null, end: null, minKW: 50,
     stations: [], busy: false, locating: false, searched: false, error: '', disposed: false
   }),
@@ -63,6 +63,7 @@ export default {
     this.map = null;
     this.mapListener = null;
     this.routeLine = null;
+    this.routeKey = null;
   },
   methods: {
     initMap() {
@@ -166,7 +167,15 @@ export default {
     },
     plan() {
       if (!this.ready([this.start, this.end])) return;
-      this.$root.EVNotify.getRoute(this.start, this.end, (err, res) => {
+      const start = Object.assign({}, this.start);
+      const end = Object.assign({}, this.end);
+      const minKW = Number(this.minKW);
+      const routeKey = JSON.stringify([start.lat, start.lng, end.lat, end.lng]);
+      const loadStations = () => this.$root.EVNotify.getRouteStations(start, end, minKW,
+        (err, res) => this.finishStations(err, res, true));
+      // Station retries and power changes can reuse the displayed route.
+      if (this.routeKey === routeKey) { loadStations(); return; }
+      this.$root.EVNotify.getRoute(start, end, (err, res) => {
         if (this.disposed) return;
         if (err) { this.busy = false; this.error = 'Route calculation failed (' + err + ').'; return; }
         const points = res && res.data && res.data.points;
@@ -179,7 +188,8 @@ export default {
         const bounds = new window.google.maps.LatLngBounds();
         points.forEach(point => bounds.extend(point));
         this.map.fitBounds(bounds);
-        this.$root.EVNotify.getRouteStations(this.start, this.end, Number(this.minKW), (stationErr, stationRes) => this.finishStations(stationErr, stationRes, true));
+        this.routeKey = routeKey;
+        loadStations();
       });
     }
   }

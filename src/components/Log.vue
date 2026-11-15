@@ -275,7 +275,8 @@
                 return this.formatSOC(this.log.start_soc != null ? this.log.start_soc : this.getSOCFromStats('start'));
             },
             endSOC() {
-                return this.formatSOC(this.log.end_soc != null ? this.log.end_soc : this.getSOCFromStats('end'));
+                const soc = logUtils.running(this.log) && this.log.current_soc != null ? this.log.current_soc : this.log.end_soc;
+                return this.formatSOC(soc != null ? soc : this.getSOCFromStats('end'));
             },
             startODO() {
                 return this.log.start_odo != null ? this.log.start_odo : this.getValueFromStats('odo', 'start');
