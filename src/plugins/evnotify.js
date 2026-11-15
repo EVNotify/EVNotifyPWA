@@ -70,6 +70,11 @@ var fromV3Sync = function (sync) {
     return result;
 };
 
+var fromV3History = function (history) {
+    return (Array.isArray(history) ? history : []).map(fromV3Sync).filter(Boolean)
+        .sort(function (a, b) { return b.timestamp - a.timestamp; });
+};
+
 var fromV3Log = function (log) {
     if (!log) return null;
     var result = normalizeKeysToSnake(log);
@@ -87,8 +92,7 @@ var fromV3Log = function (log) {
     result.end_ced = log.endCED;
     result.average_kw = log.averageKW;
     if (log.averageSpeed != null) result.average_speed = log.averageSpeed * 3.6;
-    result.stats = (Array.isArray(log.history) ? log.history : []).map(fromV3Sync).filter(Boolean)
-        .sort(function (a, b) { return b.timestamp - a.timestamp; });
+    result.stats = fromV3History(log.history);
     return result;
 };
 
@@ -507,6 +511,13 @@ EVNotify.prototype.getLog = function (id, callback) {
     return self;
 };
 
+EVNotify.prototype.getLogHistory = function (id, callback) {
+    return this.requestV3('get', 'logs/' + encodeURIComponent(this.akey) + '/' + encodeURIComponent(id) + '/history', null, function (err, res) {
+        if (!err && (!res || !Array.isArray(res.data))) err = 'Invalid history response';
+        if (typeof callback === 'function') callback(err, err ? null : fromV3History(res.data));
+    });
+};
+
 EVNotify.prototype.getLatestLog = function (callback) {
     var self = this;
 
@@ -692,10 +703,16 @@ EVNotify.prototype.buyCat = function (catID, orderID, callback) {
  };
 
 EVNotify.prototype.setVersion = function (version) {
+    this._sessionGeneration = (this._sessionGeneration || 0) + 1;
     this.version = (typeof version === 'string') ? version.trim().toUpperCase() : 'V2';
     this.baseUrl = normalizeBaseUrl(getBaseUrlFromVersion(this.version));
     this._lastSyncPending = null;
     return this;
+};
+
+var matchesSession = function (self, session) {
+    return self._sessionGeneration === session.generation && self.version === session.version &&
+        self.baseUrl === session.baseUrl && self.akey === session.akey && self.token === session.token;
 };
 
 EVNotify.prototype._request = function (type, fnc, data, callback) {
@@ -709,16 +726,25 @@ EVNotify.prototype._request = function (type, fnc, data, callback) {
         authHeader = this.akey + ' ' + this.token;
     }
     if (this.version === 'V3' && resolved.path.slice(-10) === '/last-sync') {
-        if (this._lastSyncPending) {
-            this._lastSyncPending.push(callback);
+        if (this._lastSyncPending && matchesSession(this, this._lastSyncPending)) {
+            this._lastSyncPending.callbacks.push(callback);
             return;
         }
-        this._lastSyncPending = [callback];
+        var batch = {
+            generation: this._sessionGeneration,
+            version: this.version,
+            baseUrl: this.baseUrl,
+            akey: this.akey,
+            token: this.token,
+            callbacks: [callback]
+        };
+        this._lastSyncPending = batch;
         var self = this;
         sendRequest(resolved.method, resolved.path, resolved.data, function (err, res) {
-            var pending = self._lastSyncPending || [];
-            self._lastSyncPending = null;
-            pending.forEach(function (done) { if (typeof done === 'function') done(err, res); });
+            // A late response owns only its original batch, never a newer session's readers.
+            if (self._lastSyncPending === batch) self._lastSyncPending = null;
+            if (!matchesSession(self, batch)) { err = 'Session changed'; res = null; }
+            batch.callbacks.forEach(function (done) { if (typeof done === 'function') done(err, res); });
         }, this.baseUrl, authHeader);
         return;
     }

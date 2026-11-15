@@ -24,11 +24,13 @@
         <v-flex xs12 sm12 md6>
             <p v-if="loading">Loading log…</p>
             <v-alert v-if="loadError" type="error" :value="true">{{ loadError }}
-                <v-btn flat :disabled="loading" @click="loadLog">Retry</v-btn>
+                <v-btn flat :disabled="loading || busy || historyLoading" @click="loadLog">Retry</v-btn>
             </v-alert>
             <v-alert v-if="actionError" type="error" :value="true">{{ actionError }}</v-alert>
             <v-card class="mx-auto" v-if="log.id" v-show="!showChart && !showMap">
-                <v-alert v-if="log.historyError" type="info" :value="true">{{ log.historyError }}</v-alert>
+                <v-alert v-if="log.historyError" type="info" :value="true">{{ log.historyError }}
+                    <v-btn flat :disabled="loading || busy || historyLoading" :loading="historyLoading" @click="retryHistory">Retry history</v-btn>
+                </v-alert>
                 <v-card-title>
                     <v-icon class="mr-5" size="64" @click="$router.push('/logs')">chevron_left</v-icon>
                     <v-btn v-if="$root.EVNotify.version === 'V3'" flat color="error" :disabled="busy" @click="removeLog">Delete log</v-btn>
@@ -129,6 +131,7 @@
             loadError: '',
             actionError: '',
             loading: false,
+            historyLoading: false,
             busy: false,
             disposed: false,
             logMap: null,
@@ -144,7 +147,7 @@
         },
         methods: {
             loadLog() {
-                if (this.loading || this.busy) return;
+                if (this.disposed || this.loading || this.busy || this.historyLoading) return;
                 this.loading = true;
                 this.loadError = '';
                 this.$root.EVNotify.getLog(this.id, (err, log) => {
@@ -157,13 +160,30 @@
                     this.log = log;
                     this.originalTitle = log.title;
                     this.saveBtnHighlight = false;
-                    this.$nextTick(() => {
-                        if (this.disposed) return;
-                        if (this.$refs.chart) this.$refs.chart.renderChart(this.chartData, {
-                            scales: { xAxes: [{ ticks: { autoSkip: true, maxTicksLimit: 15 } }] }
-                        });
-                        this.renderMap();
+                    this.refreshVisualizations();
+                });
+            },
+            retryHistory() {
+                if (this.disposed || this.loading || this.busy || this.historyLoading || !this.log.id || !this.log.historyError) return;
+                this.historyLoading = true;
+                this.$root.EVNotify.getLogHistory(this.id, (err, stats) => {
+                    if (this.disposed) return;
+                    this.historyLoading = false;
+                    if (err) {
+                        this.log.historyError = 'Log history is unavailable (' + err + ').';
+                        return;
+                    }
+                    this.log = Object.assign({}, this.log, { stats, historyError: null });
+                    this.refreshVisualizations();
+                });
+            },
+            refreshVisualizations() {
+                this.$nextTick(() => {
+                    if (this.disposed) return;
+                    if (this.$refs.chart) this.$refs.chart.renderChart(this.chartData, {
+                        scales: { xAxes: [{ ticks: { autoSkip: true, maxTicksLimit: 15 } }] }
                     });
+                    this.renderMap();
                 });
             },
             clearMap() {

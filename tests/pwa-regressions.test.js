@@ -104,6 +104,64 @@ detail.loadLog();
 assert.strictEqual(detail.loadError, '');
 assert.strictEqual(detail.originalTitle, 'Loaded');
 
+// A history-only retry must preserve summary edits and update the chart/map.
+let historyCallback, historyCalls = 0, mapRenders = 0;
+const charts = [];
+const historyDetail = instance(Log, {
+  $root: { MomentJS: moment, EVNotify: {
+    getLog: (_, cb) => cb(null, { id: 'history-log', title: 'Original', start: 100, end: 200, stats: [], historyError: 'Offline' }),
+    getLogHistory(id, cb) { assert.strictEqual(id, 'history-log'); historyCalls++; historyCallback = cb; }
+  } },
+  $refs: { chart: { renderChart: data => charts.push(data) } },
+  $nextTick: cb => cb()
+});
+historyDetail.id = 'history-log';
+historyDetail.renderMap = () => { mapRenders++; };
+historyDetail.loadLog();
+historyDetail.log.title = 'Unsaved title';
+historyDetail.detectChange();
+historyDetail.loading = true; historyDetail.retryHistory();
+historyDetail.loading = false; historyDetail.busy = true; historyDetail.retryHistory();
+historyDetail.busy = false;
+assert.strictEqual(historyCalls, 0, 'retry is disabled during loading or log actions');
+historyDetail.retryHistory(); historyDetail.retryHistory(); historyDetail.loadLog();
+assert.strictEqual(historyCalls, 1, 'only one history request may be pending');
+assert.strictEqual(historyDetail.historyLoading, true);
+historyCallback('Offline', null);
+assert.strictEqual(historyDetail.historyLoading, false);
+assert(historyDetail.log.historyError.includes('Offline'));
+assert.strictEqual(historyDetail.log.title, 'Unsaved title');
+assert.strictEqual(historyDetail.originalTitle, 'Original');
+assert.strictEqual(historyDetail.saveBtnHighlight, true);
+assert.strictEqual(mapRenders, 1, 'failed retry must leave existing visualizations alone');
+historyDetail.retryHistory();
+const historySamples = samples.map((stat, index) => Object.assign({}, stat, { latitude: 51 + index, longitude: 7 + index }));
+historyCallback(null, historySamples);
+assert.strictEqual(historyDetail.historyLoading, false);
+assert.strictEqual(historyDetail.log.historyError, null);
+assert.strictEqual(historyDetail.log.title, 'Unsaved title');
+assert.strictEqual(historyDetail.originalTitle, 'Original');
+assert.strictEqual(historyDetail.saveBtnHighlight, true);
+assert.strictEqual(historyDetail.log.start, 100);
+assert.strictEqual(historyDetail.log.end, 200);
+assert.strictEqual(charts.length, 2);
+assert.deepStrictEqual(charts[1].datasets[0].data, [0, 80]);
+assert.strictEqual(mapRenders, 2);
+assert.deepStrictEqual(historyDetail.mapData, [{ lat: 51, lng: 7 }, { lat: 52, lng: 8 }]);
+historyDetail.retryHistory();
+assert.strictEqual(historyCalls, 2, 'successful history has no further retry');
+historyDetail.log.historyError = 'Premium required';
+historyDetail.retryHistory(); historyCallback('Premium required', null);
+assert(historyDetail.log.historyError.includes('Premium required'));
+historyDetail.retryHistory();
+const beforeDestroyLog = historyDetail.log;
+Log.beforeDestroy.call(historyDetail);
+historyCallback(null, []);
+assert.strictEqual(historyDetail.log, beforeDestroyLog, 'late history callbacks must not update the destroyed view');
+assert.strictEqual(charts.length, 2);
+historyDetail.retryHistory();
+assert.strictEqual(historyCalls, 4, 'destroyed views cannot start retries');
+
 const Logs = load('src/components/Logs.vue').default;
 const list = instance(Logs, { $root: { MomentJS: moment } });
 for (const failingType of [0, 1]) {
@@ -213,6 +271,45 @@ dashboard.settings.capacity = null;
 assert.strictEqual(dashboard.totalRange, null);
 assert.strictEqual(dashboard.rangePerMinute, '–');
 
+// Exercise real login/rollback and dashboard callbacks with requests still in flight.
+const inFlight = [];
+class ControlledXHR {
+  constructor() { inFlight.push(this); }
+  open() {}
+  setRequestHeader() {}
+  send() {}
+  respond(status, data) {
+    this.status = status; this.readyState = 4; this.responseText = JSON.stringify(data);
+    this.onreadystatechange();
+  }
+}
+const Client = load('src/plugins/evnotify.js', {}, { XMLHttpRequest: ControlledXHR }).default;
+for (const failedLogin of [false, true]) {
+  const liveClient = new Client('ABC123', 'old-token', 'V3');
+  const root = { EVNotify: liveClient, MomentJS: moment };
+  const oldPage = instance(Dashboard, { $root: root });
+  oldPage.fetchData();
+  const oldRequest = inFlight.shift();
+  const signIn = instance(Login, { $root: root, $router: { push() {} } });
+  signIn.akey = 'DEF456'; signIn.password = 'password'; signIn.version = 'V3';
+  signIn.login();
+  inFlight.shift().respond(failedLogin ? 401 : 200, failedLogin ? { message: 'Denied' } : { token: 'new-token' });
+  if (!failedLogin) inFlight.shift().respond(200, { car: 'IONIQ_BEV' });
+  assert.strictEqual(signIn.loggingIn, false);
+  assert.strictEqual(liveClient.akey, failedLogin ? 'ABC123' : 'DEF456');
+  const newPage = instance(Dashboard, { $root: root });
+  newPage.fetchData();
+  const newRequest = inFlight.shift();
+  oldRequest.respond(200, { socDisplay: 11, latitude: 51, longitude: 7 });
+  assert.strictEqual(newPage.displaySOC, null, 'old responses cannot populate the current dashboard');
+  assert.strictEqual(newPage.syncData.latitude, 0);
+  newRequest.respond(200, { socDisplay: 99, latitude: 52, longitude: 13 });
+  assert.strictEqual(newPage.displaySOC, 99);
+  assert.strictEqual(newPage.syncData.latitude, 52);
+  assert.strictEqual(newPage.syncData.longitude, 13);
+  assert.strictEqual(inFlight.length, 0);
+}
+
 // Compile every Vue template, including new branches and disabled bindings.
 const compiler = require('vue-template-compiler');
 for (const dir of ['components', 'views']) {
@@ -222,4 +319,26 @@ for (const dir of ['components', 'views']) {
     assert.deepStrictEqual(compiler.compile(descriptor.template.content).errors, [], file + ' template must compile');
   }
 }
+
+// Render the actual retry button and invoke its click handler without a browser.
+const Vue = require('vue');
+const template = compiler.parseComponent(fs.readFileSync(path.join(__dirname, '../src/components/Log.vue'), 'utf8')).template.content;
+const render = compiler.compileToFunctions(template);
+let finishHistory;
+const parent = new Vue({ data: { EVNotify: { version: 'V3', getLogHistory: (_, cb) => { finishHistory = cb; } }, MomentJS: moment } });
+const view = new Vue(Object.assign({}, Log, render, { parent, beforeCreate() { this.$route = { query: { id: 'history-log' } }; } }));
+view.log = { id: 'history-log', title: 'Edited', stats: [], historyError: 'Offline' };
+const findRetry = node => {
+  if (node.tag === 'v-btn' && (node.children || []).some(child => child.text === 'Retry history')) return node;
+  return (node.children || []).map(findRetry).find(Boolean);
+};
+const retry = findRetry(view._render());
+assert(retry, 'history failures must expose a retry action');
+assert.strictEqual(retry.data.attrs.disabled, false);
+retry.data.on.click();
+assert.strictEqual(findRetry(view._render()).data.attrs.disabled, true);
+finishHistory(null, []);
+assert.strictEqual(findRetry(view._render()), undefined, 'successful retry removes the warning and button');
+assert.strictEqual(view.log.title, 'Edited');
+view.$destroy(); parent.$destroy();
 console.log('PWA log, settings, vehicle, login, and template regression tests passed');

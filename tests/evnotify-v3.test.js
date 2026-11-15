@@ -169,4 +169,84 @@ client.getPremium(err => { assert.strictEqual(err, 'Request timed out'); complet
 take('GET', 'premium/ABC123').ontimeout();
 assert.strictEqual(completed, 2);
 
+// Outstanding telemetry belongs to the session that started it, in either response order.
+const sessionChanges = {
+  account: c => { c.setVersion('V3'); c.akey = 'DEF456'; c.token = 'other-token'; },
+  relogin: c => c.setVersion('V3'),
+  backend: c => { c.setVersion('V2'); c.setVersion('V3'); },
+  rollback: c => {
+    const previous = { akey: c.akey, token: c.token };
+    c.setVersion('V3'); c.akey = null; c.token = null;
+    c.setVersion('V3'); c.akey = previous.akey; c.token = previous.token;
+  },
+  akey: c => { c.akey = 'DEF456'; },
+  token: c => { c.token = 'renewed-token'; },
+  baseUrl: c => { c.baseUrl = 'https://other.example/'; }
+};
+for (const name of Object.keys(sessionChanges)) {
+  for (const oldFirst of [true, false]) {
+    const c = new context.EVNotify('ABC123', 'old-token', 'V3');
+    const oldResults = [], newResults = [];
+    const read = target => ['getSOC', 'getExtended', 'getLocation'].forEach(method => {
+      c[method]((err, data) => target.push({ err, data }));
+    });
+    read(oldResults);
+    assert.strictEqual(requests.length, 1, 'old session readers coalesce');
+    const oldRequest = requests.pop();
+    sessionChanges[name](c);
+    read(newResults);
+    assert.strictEqual(requests.length, 1, 'new session readers coalesce independently');
+    const newRequest = requests.pop();
+    const respondOld = () => oldRequest.respond(200, { socDisplay: 11, latitude: 51, longitude: 7 });
+    const respondNew = () => newRequest.respond(200, { socDisplay: 99, latitude: 52, longitude: 13 });
+    if (oldFirst) {
+      respondOld();
+      assert.strictEqual(newResults.length, 0, name + ': stale completion must not drain the new batch');
+      // It must not clear the new batch either: another read still shares its request.
+      c.getLocation((err, data) => newResults.push({ err, data }));
+      assert.strictEqual(requests.length, 0, name + ': new batch must remain pending');
+      respondNew();
+    } else {
+      respondNew();
+      respondOld();
+    }
+    assert.strictEqual(oldResults.length, 3);
+    oldResults.forEach(result => {
+      assert.strictEqual(result.err, 'Session changed', name + ': invalidate old telemetry');
+      assert.strictEqual(result.data, null);
+    });
+    assert.strictEqual(newResults.length, oldFirst ? 4 : 3);
+    newResults.forEach(result => {
+      assert.strictEqual(result.err, null);
+      assert.strictEqual(result.data.soc_display, 99);
+      assert.strictEqual(result.data.latitude, 52);
+      assert.strictEqual(result.data.longitude, 13);
+    });
+  }
+}
+
+client.getLogHistory('log /1', (err, stats) => { assert.strictEqual(err, null); result = stats; });
+take('GET', 'logs/ABC123/log%20%2F1/history').respond(200, [
+  { timestamp: '2026-01-01T00:00:00Z', socDisplay: 0, latitude: 0, longitude: 0 },
+  { timestamp: '2026-01-01T00:30:00Z', socBMS: 50, cec: 12 }, null
+]);
+assert.strictEqual(result.length, 2);
+assert.strictEqual(result[0].soc_bms, 50);
+assert.strictEqual(result[0].cumulative_energy_charged, 12);
+assert.strictEqual(result[1].soc_display, 0);
+assert.strictEqual(result[1].latitude, 0);
+for (const status of [0, 403, 503]) {
+  client.getLogHistory('log-1', (err, stats) => { assert(err); assert.strictEqual(stats, null); });
+  take('GET', 'logs/ABC123/log-1/history').respond(status, { message: 'History unavailable' });
+}
+client.getLogHistory('log-1', (err, stats) => {
+  assert.strictEqual(err, 'Invalid history response'); assert.strictEqual(stats, null);
+});
+take('GET', 'logs/ABC123/log-1/history').respond(200, {});
+client.getLogHistory('log-1', (err, stats) => { assert.strictEqual(err, null); assert.strictEqual(stats.length, 0); });
+take('GET', 'logs/ABC123/log-1/history').respond(200, []);
+v2.getLogHistory('log-1', err => assert.strictEqual(err, 'This feature is unavailable with V3.'));
+new context.EVNotify(null, null, 'V3').getLogHistory('log-1', err => assert.strictEqual(err, 401));
+assert.strictEqual(requests.length, 0, 'unsupported/unauthenticated history reads must not send requests');
+
 console.log('V2/V3 API client tests passed');
