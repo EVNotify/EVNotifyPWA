@@ -8,7 +8,7 @@
           <p v-if="loading">Loading premium status…</p>
           <p v-else>{{ premiumUntil ? 'Premium until ' + formattedExpiry : 'No active premium access.' }}</p>
           <v-text-field v-model.trim="voucher" label="Voucher code"></v-text-field>
-          <v-btn :disabled="busy || !voucher" color="primary" @click="redeem">Redeem voucher</v-btn>
+          <v-btn :disabled="loading || busy || !voucher" color="primary" @click="redeem">Redeem voucher</v-btn>
         </v-card-text>
       </v-card>
     </v-flex>
@@ -41,6 +41,7 @@ export default {
       });
     },
     redeem() {
+      if (this.loading || this.busy || !this.voucher) return;
       this.busy = true;
       this.error = '';
       this.$root.EVNotify.redeemVoucher(this.voucher, (err, res) => {

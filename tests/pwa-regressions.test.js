@@ -390,8 +390,92 @@ for (const dir of ['components', 'views']) {
   }
 }
 
-// Render the actual retry button and invoke its click handler without a browser.
 const Vue = require('vue');
+
+// V3 snapshots cannot establish the age of individual location readings.
+const findNode = (node, predicate) => predicate(node) ? node :
+  (node.children || []).map(child => findNode(child, predicate)).find(Boolean);
+const dashboardTemplate = compiler.parseComponent(fs.readFileSync(path.join(__dirname, '../src/components/Dashboard.vue'), 'utf8')).template.content;
+const locationParent = new Vue({ data: { EVNotify: { version: 'V3' }, MomentJS: moment } });
+const locationView = new Vue(Object.assign({}, Dashboard, compiler.compileToFunctions(dashboardTemplate), { parent: locationParent }));
+locationView.syncData.last_location = 1767225600;
+locationView.syncData.latitude = 52;
+locationView.syncData.longitude = 13;
+const infoWindows = [];
+const maps = [];
+const previousGoogle = global.google;
+global.google = { maps: {
+  Map: class { constructor() { maps.push(this); } },
+  InfoWindow: class { constructor(options) { infoWindows.push(options); } },
+  Marker: class { addListener() {} }
+} };
+try {
+  const locationPage = instance(Dashboard, { $root: locationParent, $refs: { map: {} }, showMap: true });
+  locationPage.syncData = locationView.syncData;
+  for (const version of ['V3', 'V2', 'V3']) {
+    locationParent.EVNotify.version = version;
+    const tree = locationView._render();
+    const timestamp = findNode(tree, node => node.data && node.data.staticClass === 'caption last-location-timestamp');
+    assert.strictEqual(!!timestamp, version === 'V2', 'only V2 may display the location timestamp');
+    if (timestamp) assert(timestamp.children.some(child => child.text.includes(locationView.lastLocationTimestamp)));
+    const mapLink = findNode(tree, node => node.tag === 'v-list-tile' && node.data && node.data.class && node.data.class['last-tile']);
+    assert(mapLink && mapLink.data.on.click, 'location map must remain accessible in both versions');
+    locationPage.showLastPosition();
+    assert.strictEqual(infoWindows[infoWindows.length - 1].content,
+      version === 'V3' ? 'Last known location' : `Last location from ${locationPage.lastLocationTimestamp}`);
+  }
+  assert.strictEqual(maps.length, 3, 'hiding the timestamp must not prevent map creation');
+} finally {
+  if (previousGoogle === undefined) delete global.google;
+  else global.google = previousGoogle;
+  locationView.$destroy(); locationParent.$destroy();
+}
+
+// Redemption must wait for the initial status response, including on failures.
+const Premium = load('src/views/Premium.vue', Object.assign({}, overrides, {
+  '../utils/storage': { getValue: () => ({ akey: 'ABC123' }) }
+})).default;
+const premiumTemplate = compiler.parseComponent(fs.readFileSync(path.join(__dirname, '../src/views/Premium.vue'), 'utf8')).template.content;
+for (const statusError of [null, 'Offline']) {
+  let finishStatus, finishRedemption, redemptions = 0;
+  const premiumParent = new Vue({ data: { EVNotify: {
+    version: 'V3',
+    getPremium(cb) { finishStatus = cb; },
+    redeemVoucher(code, cb) { assert.strictEqual(code, 'VOUCHER'); redemptions++; finishRedemption = cb; }
+  } } });
+  const premiumView = new Vue(Object.assign({}, Premium, compiler.compileToFunctions(premiumTemplate), { parent: premiumParent }));
+  const redeemButton = () => findNode(premiumView._render(), node => node.tag === 'v-btn' &&
+    (node.children || []).some(child => child.text === 'Redeem voucher'));
+  premiumView.voucher = 'VOUCHER';
+  assert.strictEqual(redeemButton().data.attrs.disabled, true, 'redemption must be disabled while status is loading');
+  premiumView.redeem();
+  assert.strictEqual(redemptions, 0, 'the method must also reject redemption while loading');
+  finishStatus(statusError, statusError ? null : { data: { premiumUntil: null } });
+  assert.strictEqual(premiumView.loading, false);
+  assert.strictEqual(redeemButton().data.attrs.disabled, false, 'status errors must not prevent redemption');
+  if (statusError) assert(premiumView.error.includes(statusError));
+  redeemButton().data.on.click();
+  premiumView.redeem();
+  assert.strictEqual(redemptions, 1, 'only one redemption may be pending');
+  assert.strictEqual(redeemButton().data.attrs.disabled, true);
+  finishRedemption('Invalid voucher');
+  assert(premiumView.error.includes('Invalid voucher'));
+  assert.strictEqual(premiumView.voucher, 'VOUCHER', 'failed redemption must preserve the voucher for retry');
+  assert.strictEqual(redeemButton().data.attrs.disabled, false);
+  premiumView.redeem();
+  const expiry = '2026-12-31T23:00:00Z';
+  finishRedemption(null, { data: { premiumUntil: expiry } });
+  assert.strictEqual(premiumView.premiumUntil, expiry);
+  assert.strictEqual(premiumView.error, '');
+  assert.strictEqual(premiumView.busy, false);
+  assert.strictEqual(premiumView.voucher, '');
+  assert.strictEqual(redeemButton().data.attrs.disabled, true, 'empty vouchers must not be redeemable');
+  premiumView.redeem();
+  assert.strictEqual(redemptions, 2);
+  premiumView.$destroy(); premiumParent.$destroy();
+}
+
+// Render the actual retry button and invoke its click handler without a browser.
 const template = compiler.parseComponent(fs.readFileSync(path.join(__dirname, '../src/components/Log.vue'), 'utf8')).template.content;
 const render = compiler.compileToFunctions(template);
 let finishHistory;

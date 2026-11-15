@@ -215,7 +215,7 @@
             <v-divider v-if="syncData.last_location" class="mt-1 mb-3"></v-divider>
             <v-list two-line subheader v-if="syncData.last_location">
               <v-subheader>Last location</v-subheader>
-              <p class="caption last-location-timestamp">Last updated: {{ lastLocationTimestamp }}</p>
+              <p v-if="!isV3" class="caption last-location-timestamp">Last updated: {{ lastLocationTimestamp }}</p>
                 <v-list-tile avatar @click="showMap = true" :class="{'last-tile': syncData.last_location}">
                   <v-list-tile-avatar>
                     <v-icon :class="iconColor">map</v-icon>
@@ -423,7 +423,7 @@
         });
         // eslint-disable-next-line
         const infoWindow = new google.maps.InfoWindow({
-          content: `Last location from ${this.lastLocationTimestamp}`
+          content: this.isV3 ? 'Last known location' : `Last location from ${this.lastLocationTimestamp}`
         });
         // eslint-disable-next-line
         const marker = new google.maps.Marker({
