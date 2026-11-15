@@ -118,7 +118,11 @@
             </v-card>
         </v-dialog>
         <v-flex xs12 sm12 md6>
-            <v-form>
+                <v-form>
+                    <v-alert v-if="settingsError" type="error" :value="true">{{ settingsError }}
+                        <v-btn flat :disabled="saving || settingsLoading" @click="loadSettings()">Reload settings</v-btn>
+                    </v-alert>
+                    <v-alert v-if="isV3" type="info" :value="true">Push notifications and ABRP are unavailable with V3.</v-alert>
                 <v-list>
                     <v-list-group v-for="setting in settings" :key="setting.title" v-model="setting.active"
                         :prepend-icon="setting.icon" no-action>
@@ -129,33 +133,38 @@
                                 </v-list-tile-content>
                             </v-list-tile>
                         </template>
-                        <v-list-tile v-for="element in setting.elements" :key="element.title">
+                        <v-list-tile v-for="element in setting.elements" :key="element.title" v-show="!element.v3Only || isV3">
                             <v-list-tile-content>
                                 <v-list-tile-title v-if="element.type === 'text'">{{ element.title }}
                                 </v-list-tile-title>
                                 <v-text-field v-else-if="element.type === 'password'"
                                     :prepend-icon="element.showPassword ? 'visibility_off' : 'visibility'"
                                     :label="element.title" :type="element.showPassword ? 'text' : 'password'" readonly
-                                    :hint="element.hint" :persistent-hint="true" :value="element.value"
+                                    :hint="element.hint" :persistent-hint="true" :disabled="saving || settingsLoading" :value="element.value"
                                     @click:prepend="element.showPassword = !element.showPassword"
                                     @change="showSaveIcon()">
                                 </v-text-field>
                                 <v-btn v-else-if="element.type === 'button'" :flat="!!element.flat" :block="!element.flat" large :color="element.color"
+                                    :disabled="isV3 && element.action === 'showABRPDialog'"
                                     @click="element.href ? '' : callDynamicFunction(element.action)" :href="element.href">{{ element.title }}
                                 </v-btn>
-                                <v-select v-else-if="element.type === 'select'" :items="element.values"
-                                    :value="element.value" :label="element.title"
+                                <v-select v-else-if="element.type === 'select'" :items="element.id === 'car' && isV3 ? v3Cars : element.values"
+                                    :disabled="saving || settingsLoading" :value="element.value" :label="element.title"
                                     @change="element.value = $event; showSaveIcon()">
                                 </v-select>
                                 <v-slider v-else-if="element.type === 'slider'" thumb-label="always" :min="element.min"
                                     persistent-hint :hint="element.hint" :label="element.title" :max="element.max"
-                                    :value="element.value" :step="element.step"
+                                    :disabled="saving || settingsLoading" :value="element.value" :step="element.step"
                                     @input="element.value = $event; showSaveIcon()">
                                 </v-slider>
                                 <v-text-field v-else-if="element.type === 'textfield'" :label="element.title"
-                                    @input="element.value = $event; showSaveIcon()" :value="element.value">
+                                    @input="element.value = $event; showSaveIcon()" :disabled="saving || settingsLoading" :value="element.value">
                                 </v-text-field>
+                                <v-text-field v-else-if="element.type === 'number'" :label="element.title"
+                                    type="number" min="0" step="0.1" :disabled="saving || settingsLoading" :value="element.value" :hint="element.hint" persistent-hint
+                                    @input="element.value = $event; showSaveIcon()"></v-text-field>
                                 <v-switch v-else-if="element.type === 'switch'" :label="element.title"
+                                    :disabled="saving || settingsLoading || (isV3 && element.id === 'push')"
                                     @change="element.value = $event; showSaveIcon(); callDynamicFunction(element.action, $event)" :value="element.value"
                                     :input-value="element.value"
                                     :hint="element.hint" :persistent-hint="true">
@@ -175,14 +184,22 @@
         EventBus
     } from '../utils/event';
     import Storage from '../utils/storage';
+    import v3Cars from '../utils/vehicles';
 
     export default {
         computed: {
+            v3Cars() { return v3Cars; },
+            isV3() {
+                return this.$root.EVNotify.version === 'V3';
+            },
             primaryColor() {
                 return (Storage.getValue('darkMode') ? 'primary darken-1' : 'primary');
             },
         },
         data: () => ({
+            saving: false,
+            settingsLoading: false,
+            settingsError: '',
             settings: [{
                 title: 'Credentials',
                 icon: 'account_circle',
@@ -256,6 +273,13 @@
                         text: 'VW ID.3',
                         value: 'ID_3'
                     }]
+                }, {
+                    id: 'capacity',
+                    value: '',
+                    title: 'Battery capacity (kWh)',
+                    type: 'number',
+                    v3Only: true,
+                    hint: 'Optional usable capacity. Required for estimates when no model default exists.'
                 }, {
                     id: 'consumption',
                     value: '',
@@ -384,58 +408,60 @@
                 const settings = {};
 
                 this.settings.forEach((setting) => {
-                    setting.elements.filter((element) => element.id).map((element) => ({
+                    setting.elements.filter((element) => element.id && (!element.v3Only || this.isV3)).map((element) => ({
                         key: element.id,
                         value: element.value
                     })).forEach((obj) => settings[obj.key] = obj.value);
                 });
+                if (this.isV3) settings.capacity = settings.capacity === '' || settings.capacity == null ? null : Number(settings.capacity);
                 return settings;
             },
+            displaySettings(settings) {
+                this.settings.forEach(group => group.elements.forEach(element => {
+                    if (element.id) element.value = settings[element.id] != null ? settings[element.id] : '';
+                }));
+            },
             loadSettings(callback) {
-                const self = this;
-                const localSettings = Storage.getValue('settings', {});
-
-                const displaySettings = (settings) => {
-                    Object.keys(settings).forEach((key) => {
-                        this.settings.forEach((setting) => {
-                            const current = setting.elements.filter((element) => element.id === key)[0];
-
-                            if (current) current.value = localSettings[key];
-                        });
-                    });
-                };
-
-                self.$root.EVNotify.getSettings((err, serverSettings) => {
+                if (this.settingsLoading || this.saving) return;
+                this.settingsLoading = true;
+                this.settingsError = '';
+                this.$root.EVNotify.getSettings((err, serverSettings) => {
+                    this.settingsLoading = false;
                     if (!err && serverSettings) {
-                        displaySettings((self.localSettings = Storage.setValue('settings', serverSettings)));
+                        this.localSettings = Storage.setValue('settings', serverSettings);
                     } else {
-                        displaySettings((self.localSettings = Storage.getValue('settings', {})));
+                        this.settingsError = 'Could not load settings (' + (err || 'Invalid response') + ').';
+                        this.localSettings = Storage.getValue('settings', {});
                     }
+                    this.displaySettings(this.localSettings);
                     if (typeof callback === 'function') callback(err, serverSettings);
                 });
             },
             saveSettings() {
-                const self = this;
-                const settings = self.retrieveSettings();
-
-                self.$root.EVNotify.getSettings((err, serverSettings) => {
-                    if (!err && serverSettings) {
-                        Object.keys(settings).forEach((setting) => {
-                            serverSettings[setting] = settings[setting];
+                if (this.saving || this.settingsLoading) return;
+                const settings = this.retrieveSettings();
+                if (this.isV3 && settings.capacity != null && (!Number.isFinite(settings.capacity) || settings.capacity <= 0)) {
+                    this.settingsError = 'Enter a positive battery capacity or leave it empty.';
+                    return;
+                }
+                this.saving = true;
+                this.settingsError = '';
+                const fail = err => {
+                    this.saving = false;
+                    this.settingsError = 'Could not save and refresh settings (' + err + '). Your edits are still available.';
+                };
+                this.$root.EVNotify.getSettings((err, serverSettings) => {
+                    if (err || !serverSettings) return fail(err || 'Invalid response');
+                    this.$root.EVNotify.setSettings(Object.assign({}, serverSettings, settings), saveErr => {
+                        if (saveErr) return fail(saveErr);
+                        this.$root.EVNotify.getSettings((reloadErr, canonical) => {
+                            if (reloadErr || !canonical) return fail(reloadErr || 'Invalid response');
+                            this.saving = false;
+                            this.localSettings = Storage.setValue('settings', canonical);
+                            this.displaySettings(canonical);
+                            EventBus.$emit('unsave');
                         });
-                        self.$root.EVNotify.setSettings(serverSettings, (err) => {
-                            if (!err) {
-                                this.localSettings = serverSettings;
-                                Storage.setValue('settings', serverSettings);
-                                EventBus.$emit('unsave');
-                                // TODO
-                            } else {
-                                // TODO
-                            }
-                        });
-                    } else {
-                        // TODO
-                    }
+                    });
                 });
             },
             changePassword() {
@@ -449,7 +475,6 @@
                 }
 
                 self.$root.EVNotify.changePW(self.password, self.newPassword, (err) => {
-                    console.log(err);
                     self.password = self.newPassword = self.newPassword2 = '';
                     self.changePasswordDialog = false;
                     self.showSnackbar = true;
@@ -498,9 +523,11 @@
         },
         mounted() {
             this.loadSettings();
-            EventBus.$on('saved', () => this.saveSettings());
+            this.onSaved = () => this.saveSettings();
+            EventBus.$on('saved', this.onSaved);
         },
         beforeDestroy() {
+            EventBus.$off('saved', this.onSaved);
             EventBus.$emit('unsave');
         }
     }

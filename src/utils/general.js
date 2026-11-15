@@ -1,36 +1,31 @@
-import cars from '../utils/cars';
+import cars from './cars';
 import MomentJS from 'moment';
 
 export default {
-    /**
-     * Calculates chargetime left and finishtime while charging
-     * @param {String} car the cartype to get the chargetime to
-     * @param {String} socDisplay the state of charge from display
-     * @param {String} socBMS the state of charge from BMS
-     * @param {String} batteryPower the charging speed
-     * @param {String} typeOfTime the result timeType that gets returned
-     * @returns {*} the defined and calculated timeType
-     */
-    chargeTime(car, socDisplay, socBMS, batteryPower, typeOfTime) {
-        const duration = MomentJS.duration(parseFloat(this.chargeDecimalTime(car, socDisplay, socBMS, batteryPower))).asMilliseconds();
-        const now = new Date().getTime();
-        if(typeOfTime == "timeleft") {
-            return MomentJS().startOf('day').add(duration, 'minutes').format('m:ss');
-        } else if (typeOfTime == "finishtime") {
-            return MomentJS(now).add(duration, 'hours').format('HH:mm');
-        } else {
-            return false;
-        }
+    capacity(car, configuredCapacity) {
+        if (Number(configuredCapacity) > 0 && Number.isFinite(Number(configuredCapacity))) return Number(configuredCapacity);
+        return cars[car] ? cars[car].CAPACITY : null;
     },
-    chargeDecimalTime(car, socDisplay, socBMS, batteryPower) {
-        const capacity = cars[car].CAPACITY;
-        const soc = socDisplay || socBMS;
-        const amountToCharge = capacity - parseFloat(
-            capacity * ((soc === 100) ? 1 : '0.' + ((soc < 10) ? ('0' + parseInt(soc)) : parseInt(soc)))
-        ).toFixed(2) || 0;
-        const decimalTime = parseFloat(
-            amountToCharge / (Math.abs(batteryPower) || cars[car].FAST_SPEED)
-        ).toFixed(2);
-        return decimalTime;
+    chargeTime(car, socDisplay, socBMS, batteryPower, typeOfTime, configuredCapacity) {
+        const hours = this.chargeDecimalTime(car, socDisplay, socBMS, batteryPower, configuredCapacity);
+        if (hours == null) return '–';
+        if (typeOfTime === 'timeleft') {
+            const minutes = Math.round(hours * 60);
+            return `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, '0')}`;
+        }
+        if (typeOfTime === 'finishtime') return MomentJS().add(hours, 'hours').format('HH:mm');
+        return false;
+    },
+    chargeDecimalTime(car, socDisplay, socBMS, batteryPower, configuredCapacity) {
+        const capacity = this.capacity(car, configuredCapacity);
+        const soc = socDisplay != null ? socDisplay : socBMS;
+        const power = Math.abs(Number(batteryPower)) || (cars[car] && cars[car].FAST_SPEED);
+        if (!capacity || !Number.isFinite(soc) || soc < 0 || soc > 100 || !Number.isFinite(power) || power <= 0) return null;
+        return capacity * (1 - soc / 100) / power;
+    },
+    range(car, consumption, configuredCapacity) {
+        const capacity = this.capacity(car, configuredCapacity);
+        if (!capacity || !Number.isFinite(Number(consumption)) || Number(consumption) <= 0) return null;
+        return Math.floor(capacity / Number(consumption) * 100);
     }
-}
+};

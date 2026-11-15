@@ -8,10 +8,17 @@
             <span>Logs</span>
             <v-icon>list</v-icon>
         </v-btn>
-        <v-btn flat disabled :color="primaryColor" value="Stations">
+        <v-btn flat :disabled="!isV3" :to="isV3 ? '/stations' : undefined" :color="primaryColor" value="Stations">
             <span>Stations</span>
             <v-icon>ev_station</v-icon>
         </v-btn>
+        <v-menu v-if="isV3" top offset-y>
+            <v-btn slot="activator" flat :color="primaryColor"><v-icon>more_horiz</v-icon>More</v-btn>
+            <v-list>
+                <v-list-tile to="/premium"><v-list-tile-title>Premium</v-list-tile-title></v-list-tile>
+                <v-list-tile to="/trips"><v-list-tile-title>Trips</v-list-tile-title></v-list-tile>
+            </v-list>
+        </v-menu>
         <v-btn flat :color="primaryColor" value="Settings" to="/settings">
             <span>Settings</span>
             <v-icon>settings</v-icon>
@@ -27,6 +34,9 @@ import Storage from '../utils/storage';
             backgroundColor: (Storage.getValue('darkMode') ? '#212121' : 'white') + ' !important',
         }),
         computed: {
+            isV3() {
+                return this.$root.EVNotify.version === 'V3';
+            },
             primaryColor() {
                 return (Storage.getValue('darkMode') ? 'primary darken-1' : 'primary');
             },

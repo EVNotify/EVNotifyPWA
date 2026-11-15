@@ -22,13 +22,20 @@
             </v-card>
         </v-dialog>
         <v-flex xs12 sm12 md6>
+            <p v-if="loading">Loading log…</p>
+            <v-alert v-if="loadError" type="error" :value="true">{{ loadError }}
+                <v-btn flat :disabled="loading" @click="loadLog">Retry</v-btn>
+            </v-alert>
+            <v-alert v-if="actionError" type="error" :value="true">{{ actionError }}</v-alert>
             <v-card class="mx-auto" v-if="log.id" v-show="!showChart && !showMap">
+                <v-alert v-if="log.historyError" type="info" :value="true">{{ log.historyError }}</v-alert>
                 <v-card-title>
                     <v-icon class="mr-5" size="64" @click="$router.push('/logs')">chevron_left</v-icon>
+                    <v-btn v-if="$root.EVNotify.version === 'V3'" flat color="error" :disabled="busy" @click="removeLog">Delete log</v-btn>
                     <v-layout column align-start class="average-container-text">
                         <div class="caption grey--text text-uppercase">Average</div>
                         <div>
-                            <span class="display-2 font-weight-black">{{ avgKW }}</span>
+                            <span class="display-2 font-weight-black">{{ formatNumber(avgKW) }}</span>
                             <strong>kW</strong>
                         </div>
                     </v-layout>
@@ -48,7 +55,7 @@
                             </template>
                             <v-text-field hide-details flat label="Log title" solo v-model="log.title" @input="detectChange()">
                                 <template v-slot:append>
-                                    <v-btn class="mx-0" :disabled="!saveBtnHighlight" @click="save()" :color="btnHighlightColor">Save</v-btn>
+                                    <v-btn class="mx-0" :disabled="busy || !saveBtnHighlight" @click="save()" :color="btnHighlightColor">Save</v-btn>
                                 </template>
                             </v-text-field>
                             <div class="total-time">Duration: {{ totalTime }}h</div>
@@ -56,19 +63,19 @@
                         <v-timeline-item class="mb-1">
                             <v-flex>
                                 <div class="cadivtion">{{ logDate }}</div>
-                                <div v-if="startCEC || startCED">
-                                    <div class="caption" v-if="log.charge">charged: {{ (endCEC - startCEC || 0).toFixed(1) }} kWh {{ startODO ? ' - ' + startODO + ' km (ODO)' : '' }}</div>
-                                    <div class="caption" v-else>consumed: {{ (endCED - startCED || 0).toFixed(1)}} kWh<br>recuperated: {{ (endCEC - startCEC || 0).toFixed(1) }} kWh</div>
+                                <div v-if="startCEC != null || startCED != null">
+                                    <div class="caption" v-if="log.charge">charged: {{ formatNumber(chargedEnergy) }} kWh {{ startODO != null ? ' - ' + startODO + ' km (ODO)' : '' }}</div>
+                                    <div class="caption" v-else>consumed: {{ formatNumber(dischargedEnergy)}} kWh<br>recuperated: {{ formatNumber(chargedEnergy) }} kWh</div>
                                 </div>
-                                <div class="caption" v-if="!log.charge">Ø {{ ((((endCED - startCED) - (endCEC - startCEC)) || 0) / distance * 100).toFixed(1) }} kWh/100km | Ø {{ avgSpeed }} km/h | {{ distance }} km driven</div>
+                                <div class="caption" v-if="!log.charge">Ø {{ formatNumber(consumption) }} kWh/100km | Ø {{ formatNumber(avgSpeed, 2) }} km/h | {{ formatNumber(distance, 2) }} km driven</div>
                             </v-flex>
                         </v-timeline-item>
                         <v-timeline-item class="mb-3" small color="accent">
                             <v-layout justify-space-between>
                                 <v-flex xs-7>
                                     <v-chip class="white--text ml-0" color="accent" label small>Start</v-chip>
-                                    {{ startSOC }} {{ !log.charge && startODO ? ' - ' + startODO + ' km (ODO)' : '' }}
-                                    <div class="caption" v-if="startCEC || startCED">{{ startCEC }} kWh (CEC) / <br> {{ startCED }} kWh (CED)</div>
+                                    {{ startSOC }} {{ !log.charge && startODO != null ? ' - ' + startODO + ' km (ODO)' : '' }}
+                                    <div class="caption" v-if="startCEC != null || startCED != null">{{ formatNumber(startCEC) }} kWh (CEC) / <br> {{ formatNumber(startCED) }} kWh (CED)</div>
                                 </v-flex>
                                 <v-flex xs-5 text-xs-right>{{ startTime }}</v-flex>
                             </v-layout>
@@ -76,9 +83,9 @@
                         <v-timeline-item small color="primary" class="last-timeline-item">
                             <v-layout justify-space-between>
                                 <v-flex xs-7>
-                                    <v-chip class="white--text ml-0" color="primary" label small>End</v-chip>
-                                    {{ endSOC }} {{ !log.charge && endODO ? ' - ' + endODO + ' km (ODO)' : '' }}
-                                    <div class="caption" v-if="endCEC || endCED">{{ endCEC }} kWh (CEC) / <br> {{ endCED }} kWh (CED)</div>
+                                    <v-chip class="white--text ml-0" color="primary" label small>{{ log.status === 'running' ? 'Current' : 'End' }}</v-chip>
+                                    {{ endSOC }} {{ !log.charge && endODO != null ? ' - ' + endODO + ' km (ODO)' : '' }}
+                                    <div class="caption" v-if="endCEC != null || endCED != null">{{ formatNumber(endCEC) }} kWh (CEC) / <br> {{ formatNumber(endCED) }} kWh (CED)</div>
                                 </v-flex>
                                 <v-flex xs-5 text-xs-right>{{ endTime }}</v-flex>
                             </v-layout>
@@ -112,12 +119,20 @@
 
 <script>
     import { Line } from 'vue-chartjs';
+    import logUtils from '../utils/log';
 
     export default {
         data: () => ({
             id: 0,
             saveBtnHighlight: false,
             originalTitle: '',
+            loadError: '',
+            actionError: '',
+            loading: false,
+            busy: false,
+            disposed: false,
+            logMap: null,
+            mapOverlays: [],
             log: {},
             showMap: false,
             showChart: false,
@@ -128,70 +143,97 @@
             'chart-line': Line
         },
         methods: {
+            loadLog() {
+                if (this.loading || this.busy) return;
+                this.loading = true;
+                this.loadError = '';
+                this.$root.EVNotify.getLog(this.id, (err, log) => {
+                    if (this.disposed) return;
+                    this.loading = false;
+                    if (err || !log) {
+                        this.loadError = 'Could not load log (' + (err || 'Invalid response') + ').';
+                        return;
+                    }
+                    this.log = log;
+                    this.originalTitle = log.title;
+                    this.saveBtnHighlight = false;
+                    this.$nextTick(() => {
+                        if (this.disposed) return;
+                        if (this.$refs.chart) this.$refs.chart.renderChart(this.chartData, {
+                            scales: { xAxes: [{ ticks: { autoSkip: true, maxTicksLimit: 15 } }] }
+                        });
+                        this.renderMap();
+                    });
+                });
+            },
+            clearMap() {
+                this.mapOverlays.forEach(overlay => overlay.setMap(null));
+                this.mapOverlays = [];
+                if (this.logMap && window.google && window.google.maps && window.google.maps.event) {
+                    window.google.maps.event.clearInstanceListeners(this.logMap);
+                }
+                this.logMap = null;
+                this.validCoords = false;
+            },
+            renderMap() {
+                this.clearMap();
+                const data = this.mapData;
+                if (!this.$refs.map || !data.length || !window.google || !window.google.maps) return;
+                try {
+                    const maps = window.google.maps;
+                    const bounds = new maps.LatLngBounds();
+                    data.forEach(point => bounds.extend(point));
+                    this.logMap = new maps.Map(this.$refs.map, { zoom: 10, center: bounds.getCenter() });
+                    const line = new maps.Polyline({ path: data, geodesic: true, strokeColor: '#FF0000', strokeOpacity: 1, strokeWeight: 2 });
+                    line.setMap(this.logMap);
+                    this.mapOverlays.push(line);
+                    const start = new maps.Marker({ position: data[0], label: 'S', map: this.logMap });
+                    const end = new maps.Marker({ position: data[data.length - 1], label: 'E', map: this.logMap });
+                    this.mapOverlays.push(start, end);
+                    const startInfo = new maps.InfoWindow({ content: `Start point from ${this.startTime}` });
+                    const endInfo = new maps.InfoWindow({ content: `End point from ${this.endTime}` });
+                    start.addListener('click', () => { endInfo.close(); startInfo.open(this.logMap, start); });
+                    end.addListener('click', () => { startInfo.close(); endInfo.open(this.logMap, end); });
+                    this.validCoords = true;
+                } catch (err) {
+                    this.clearMap();
+                    this.actionError = 'The log map could not be loaded. The summary and chart remain available.';
+                }
+            },
             detectChange() {
                 this.saveBtnHighlight = this.originalTitle !== this.log.title;
             },
             displayTime(unix) {
-                return this.$root.MomentJS(new Date(unix * 1000)).format('HH:mm:ss');
+                return logUtils.timestamp(unix) ? this.$root.MomentJS(unix * 1000).format('HH:mm:ss') : '–';
             },
-            getSOCFromStats(type) {
-                let soc = 0;
-                const stats = this.log.stats;
-
-                if (type === 'start') {
-                    for (let idX = stats.length - 1; idX >= 0; idX--) {
-                        const element = stats[idX];
-
-                        if (element.soc_display || element.soc_bms) {
-                            soc = element.soc_display || element.soc_bms;
-                            break;
-                        }
-                    }
-                } else if (type === 'end') {
-                    for (let idX = 0; idX < stats.length; idX++) {
-                        const element = stats[idX];
-
-                        if (element.soc_display || element.soc_bms) {
-                            soc = element.soc_display || element.soc_bms;
-                            break;
-                        }
-                    }
-                }
-                return soc;
-            },
-            getValueFromStats(field, type) {
-                let value = 0;
-                const stats = this.log.stats;
-
-                if (type === 'start') {
-                    for (let idX = stats.length - 1; idX >= 0; idX--) {
-                        const element = stats[idX];
-
-                        if (element[field]) {
-                            value = element[field];
-                            break;
-                        }
-                    }
-                } else if (type === 'end') {
-                    for (let idX = 0; idX < stats.length; idX++) {
-                        const element = stats[idX];
-
-                        if (element[field]) {
-                            value = element[field];
-                            break;
-                        }
-                    }
-                }
-                return value;
-            },
+            getSOCFromStats(type) { return logUtils.soc(this.log, type); },
+            getValueFromStats(field, type) { return logUtils.value(this.log, field, type); },
+            formatNumber(value, digits = 1) { return Number.isFinite(value) ? value.toFixed(digits) : '–'; },
+            formatSOC(value) { return Number.isFinite(value) ? value + '%' : '–'; },
             save() {
-                const self = this;
-                const log = {...this.log};
-
+                if (this.busy) return;
+                this.busy = true;
+                this.actionError = '';
+                const title = this.log.title;
+                const log = { ...this.log };
                 delete log.stats;
-
-                self.$root.EVNotify.updateLog(log, (err) => {
-                    if (!err) self.saveBtnHighlight = false; 
+                this.$root.EVNotify.updateLog(log, err => {
+                    this.busy = false;
+                    if (err) this.actionError = 'Could not save log (' + err + ').';
+                    else {
+                        this.originalTitle = title;
+                        this.detectChange();
+                    }
+                });
+            },
+            removeLog() {
+                if (this.busy || !window.confirm('Delete this log permanently?')) return;
+                this.busy = true;
+                this.actionError = '';
+                this.$root.EVNotify.deleteLog(this.id, err => {
+                    this.busy = false;
+                    if (err) this.actionError = 'Could not delete log (' + err + ').';
+                    else this.$router.push('/logs');
                 });
             }
         },
@@ -203,94 +245,74 @@
                 return this.displayTime(this.log.start);
             },
             endTime() {
-                return this.displayTime(this.log.end);
+                return logUtils.running(this.log) ? 'Ongoing' : logUtils.timestamp(this.log.end) ? this.displayTime(this.log.end) : '–';
             },
-            totalTime() {
-                return this.$root.MomentJS.utc(this.$root.MomentJS(this.endTime, 'HH:mm:ss').diff(this.$root.MomentJS(this.startTime, 'HH:mm:ss'))).format("HH:mm:ss")
-            },
+            totalTime() { return logUtils.duration(this.log); },
             logDate() {
-                return this.$root.MomentJS(new Date(this.log.start * 1000)).format('MMMM Do YYYY');
+                return logUtils.timestamp(this.log.start) ? this.$root.MomentJS(this.log.start * 1000).format('MMMM Do YYYY') : 'Date unavailable';
             },
             startSOC() {
-                return (this.log.start_soc || this.getSOCFromStats('start')) + '%';
+                return this.formatSOC(this.log.start_soc != null ? this.log.start_soc : this.getSOCFromStats('start'));
             },
             endSOC() {
-                return (this.log.end_soc || this.getSOCFromStats('end')) + '%';
+                return this.formatSOC(this.log.end_soc != null ? this.log.end_soc : this.getSOCFromStats('end'));
             },
             startODO() {
-                return this.log.start_odo || this.getValueFromStats('odo', 'start');
+                return this.log.start_odo != null ? this.log.start_odo : this.getValueFromStats('odo', 'start');
             },
             endODO() {
-                return this.log.end_odo || this.getValueFromStats('odo', 'end');
+                return this.log.end_odo != null ? this.log.end_odo : this.getValueFromStats('odo', 'end');
             },
             startCEC() {
-                return this.log.start_cec || this.getValueFromStats('cumulative_energy_charged', 'start');
+                return this.log.start_cec != null ? this.log.start_cec : this.getValueFromStats('cumulative_energy_charged', 'start');
             },
             endCEC() {
-                return this.log.end_cec || this.getValueFromStats('cumulative_energy_charged', 'end');
+                return this.log.end_cec != null ? this.log.end_cec : this.getValueFromStats('cumulative_energy_charged', 'end');
             },
             startCED() {
-                return this.log.start_ced || this.getValueFromStats('cumulative_energy_discharged', 'start');
+                return this.log.start_ced != null ? this.log.start_ced : this.getValueFromStats('cumulative_energy_discharged', 'start');
             },
             endCED() {
-                return this.log.end_ced || this.getValueFromStats('cumulative_energy_discharged', 'end');
+                return this.log.end_ced != null ? this.log.end_ced : this.getValueFromStats('cumulative_energy_discharged', 'end');
             },
             avgKW() {
-                if (this.log.average_kw) return this.log.average_kw;
-
-                const powers = this.log.stats.filter((stat) => stat.dc_battery_power != null)
-                    .map((stat) => stat.dc_battery_power);
-
-                return Math.abs(parseFloat((powers.reduce((a, b) => a + b, 0) / powers.length) || 0).toFixed(2));
+                if (this.log.average_kw != null) return this.log.average_kw;
+                const powers = (this.log.stats || []).map(stat => stat.dc_battery_power).filter(Number.isFinite);
+                return powers.length ? Math.abs(powers.reduce((a, b) => a + b, 0) / powers.length) : null;
             },
             avgSpeed() {
-                if (this.log.average_speed) return this.log.average_speed;
-
-                const speeds = this.log.stats.filter((stat) => stat.gps_speed != null)
-                    .map((stat) => stat.gps_speed);
-
-                return Math.abs((parseFloat((speeds.reduce((a, b) => a + b, 0) / speeds.length) || 0) * 3.6).toFixed(2));
+                if (this.log.average_speed != null) return this.log.average_speed;
+                const speeds = (this.log.stats || []).map(stat => stat.gps_speed).filter(Number.isFinite);
+                return speeds.length ? Math.abs(speeds.reduce((a, b) => a + b, 0) / speeds.length * 3.6) : null;
             },
             distance() {
-                if (this.log.distance) return this.log.distance;
-                return (this.avgSpeed * ((this.log.end - this.log.start) / 3600) || 0).toFixed(2);
+                if (this.log.distance != null) return this.log.distance;
+                const end = logUtils.effectiveEnd(this.log);
+                return end && this.log.start && end >= this.log.start && Number.isFinite(this.avgSpeed) ? Number((this.avgSpeed * ((end - this.log.start) / 3600)).toFixed(2)) : null;
+            },
+            chargedEnergy() { return [this.endCEC, this.startCEC].every(Number.isFinite) ? this.endCEC - this.startCEC : null; },
+            dischargedEnergy() { return [this.endCED, this.startCED].every(Number.isFinite) ? this.endCED - this.startCED : null; },
+            consumption() {
+                return this.distance > 0 && [this.chargedEnergy, this.dischargedEnergy].every(Number.isFinite) ?
+                    (this.dischargedEnergy - this.chargedEnergy) / this.distance * 100 : null;
             },
             kWChartValues() {
-                const powers = this.log.stats.filter((stat) => stat.dc_battery_power != null).map((stat) => {
-                    return {
-                        value: stat.dc_battery_power,
-                        timestamp: stat.timestamp
-                    };
+                const samples = logUtils.stats(this.log).filter(stat => Number.isFinite(stat.dc_battery_power));
+                if (!samples.length) return [];
+                const start = logUtils.timestamp(this.log.start) || samples[0].timestamp;
+                const end = logUtils.effectiveEnd(this.log) || start;
+                const width = Math.max((end - start) / 7, 1);
+                const bins = [];
+                samples.forEach(stat => {
+                    const index = Math.max(0, Math.min(6, Math.floor((stat.timestamp - start) / width)));
+                    if (!bins[index]) bins[index] = [];
+                    bins[index].push(stat.dc_battery_power);
                 });
-                const duration = this.log.end - this.log.start;
-                const part = parseInt(duration / 7);
-                const values = {};
-                const avgValues = [];
-                let currentPart = 0;
-                let currentTimestamp = this.log.end;
-                
-                powers.forEach((power) => {
-                    if (power.timestamp >= currentTimestamp - part) {
-                        if (!values[currentPart]) values[currentPart] = [];
-                        values[currentPart].push(power.value);
-                    } else {
-                        currentPart++;
-                        currentTimestamp -= part;
-                    }
-                });
-
-                Object.keys(values).forEach((line) => {
-                    avgValues.push(Math.abs(parseFloat((values[line].reduce((a, b) => a + b, 0) / values[line]
-                        .length) || 0).toFixed(2)));
-                });
-
-
-                return avgValues.reverse();
-
+                return bins.filter(Boolean).map(bin => Number(Math.abs(bin.reduce((sum, power) => sum + power, 0) / bin.length).toFixed(2)));
             },
             chartData() {
                 const self = this;
-                const stats = [...self.log.stats].sort((a, b) => a.timestamp - b.timestamp);
+                const stats = logUtils.stats(self.log);
                 const dataObj = {
                     labels: stats.map((stat) => self.$root.MomentJS(stat.timestamp * 1000).format('HH:mm:ss')),
                     datasets: []
@@ -328,7 +350,7 @@
                 values.forEach((obj) => {
                     dataObj.datasets.push({
                         label: obj.label,
-                        data: stats.map((stat) => obj.key === 'gps_speed' ? stat[obj.key] * 3.6 || null : stat[obj.key]),
+                        data: stats.map((stat) => obj.key === 'gps_speed' ? (stat[obj.key] != null ? stat[obj.key] * 3.6 : null) : stat[obj.key]),
                         borderWidth: 0,
                         lineTension: 0,
                         fill: false,
@@ -344,9 +366,9 @@
             },
             mapData() {
                 const self = this;
-                const stats = [...self.log.stats].sort((a, b) => a.timestamp - b.timestamp);
+                const stats = logUtils.stats(self.log);
 
-                return stats.filter((stat) => stat.latitude != null && stat.longitude != null).map((stat) => ({
+                return stats.filter((stat) => Number.isFinite(stat.latitude) && Math.abs(stat.latitude) <= 90 && Number.isFinite(stat.longitude) && Math.abs(stat.longitude) <= 180).map((stat) => ({
                     lat: stat.latitude,
                     lng: stat.longitude
                 }));
@@ -355,97 +377,8 @@
         created() {
             this.id = this.$route.query.id;
         },
-        mounted() {
-            const self = this;
-
-            this.$root.EVNotify.getLog(this.id, (err, log) => {
-                if (!err && log) {
-                    self.log = log;
-                    self.originalTitle = log.title;
-                    if (!self.$refs.chart) return;
-                    setTimeout(() => {
-                        self.$nextTick(() => {
-                            self.$refs.chart.renderChart(self.chartData, {
-                                scales: {
-                                    xAxes: [{
-                                        ticks: {
-                                            autoSkip: true,
-                                            maxTicksLimit: 15
-                                        }
-                                    }]   
-                                }
-                            });
-                        });
-                    });
-                    if (!self.$refs.map) return;
-                    setTimeout(() => {
-                        self.$nextTick(() => {
-                            const data = self.mapData;
-
-                            if (!data.length) return self.validCoords = false;
-                            self.validCoords = true;
-                            // eslint-disable-next-line
-                            const bounds = new google.maps.LatLngBounds();
-                            
-                            data.forEach((latLng) => bounds.extend(latLng));
-                            
-                            // eslint-disable-next-line
-                            const map = new google.maps.Map(self.$refs.map, {
-                                zoom: 10,
-                                center: bounds.getCenter()
-                            });
-
-                            // eslint-disable-next-line
-                            const polyline = new google.maps.Polyline({
-                                path: self.mapData,
-                                geodesic: true,
-                                strokeColor: '#FF0000',
-                                strokeOpacity: 1.0,
-                                strokeWeight: 2
-                            });
-
-                            polyline.setMap(map);
-
-                            // eslint-disable-next-line
-                            const startMarker = new google.maps.Marker({
-                                position: data[0],
-                                label: 'S',
-                                map
-                            });
-
-                            // eslint-disable-next-line
-                            const startInfoWindow = new google.maps.InfoWindow({
-                                content: `Start point from ${this.startTime}`
-                            });
-
-                            startMarker.addListener('click', () => {
-                                endInfoWindow.close();
-                                // eslint-disable-next-line
-                                startInfoWindow.open(map, startMarker);
-                            });
-
-                            // eslint-disable-next-line
-                            const endMarker = new google.maps.Marker({
-                                position: data[data.length -1],
-                                label: 'E',
-                                map
-                            });
-
-                            // eslint-disable-next-line
-                            const endInfoWindow = new google.maps.InfoWindow({
-                                content: `End point from ${this.endTime}`
-                            });
-
-                            endMarker.addListener('click', () => {
-                                startInfoWindow.close();
-                                // eslint-disable-next-line
-                                endInfoWindow.open(map, endMarker);
-                            });
-                        });
-                    });
-                }
-            });
-        }
+        mounted() { this.loadLog(); },
+        beforeDestroy() { this.disposed = true; this.clearMap(); }
     }
 </script>
 
