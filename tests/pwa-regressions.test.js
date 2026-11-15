@@ -310,6 +310,37 @@ class ControlledXHR {
   }
 }
 const Client = load('src/plugins/evnotify.js', {}, { XMLHttpRequest: ControlledXHR }).default;
+
+// V3 uploads km/h; shared log views expect history in m/s and summaries in km/h.
+for (const speed of [50, 0, null, undefined]) {
+  const speedClient = new Client('ABC123', 'token', 'V3');
+  const speedPage = instance(Log, { $root: { MomentJS: moment } });
+  speedClient.getLog('speed-log', (err, log) => {
+    assert.strictEqual(err, null);
+    speedPage.log = log;
+  });
+  const startDate = '2026-01-01T00:00:00Z';
+  inFlight.shift().respond(200, {
+    id: 'speed-log', type: 'drive', startDate, endDate: '2026-01-01T01:00:00Z', averageSpeed: speed
+  });
+  inFlight.shift().respond(200, [{ timestamp: startDate, speed }]);
+  const expected = speed == null ? null : speed;
+  assert.strictEqual(speedPage.avgSpeed, expected, 'V3 summary must retain km/h');
+  assert.deepStrictEqual(speedPage.chartData.datasets.find(dataset => dataset.label === 'Speed (GPS)').data, [expected]);
+  delete speedPage.log.average_speed;
+  assert.strictEqual(speedPage.avgSpeed, expected, 'history fallback must convert V3 speed only once');
+  assert.strictEqual(speedPage.distance, expected, 'one-hour fallback distance must match the speed in km/h');
+}
+const v2SpeedClient = new Client('ABC123', 'token', 'V2');
+const v2SpeedPage = instance(Log, { $root: { MomentJS: moment } });
+v2SpeedClient.getLog('v2-speed-log', (err, log) => {
+  assert.strictEqual(err, null);
+  v2SpeedPage.log = log;
+});
+inFlight.shift().respond(200, { id: 'v2-speed-log', stats: [{ timestamp: 1767225600, gps_speed: 10 }] });
+assert.strictEqual(v2SpeedPage.avgSpeed, 36, 'V2 history remains in m/s');
+assert.deepStrictEqual(v2SpeedPage.chartData.datasets.find(dataset => dataset.label === 'Speed (GPS)').data, [36]);
+
 const freshnessClient = new Client('ABC123', 'token', 'V3');
 const freshnessPage = instance(Dashboard, { $root: { EVNotify: freshnessClient, MomentJS: moment } });
 const receivedAt = new Date().toISOString();
@@ -380,6 +411,25 @@ finishHistory(null, []);
 assert.strictEqual(findRetry(view._render()), undefined, 'successful retry removes the warning and button');
 assert.strictEqual(view.log.title, 'Edited');
 view.$destroy(); parent.$destroy();
+
+// Check the rendered Telegram links for both subscription states and API versions.
+const settingsTemplate = compiler.parseComponent(fs.readFileSync(path.join(__dirname, '../src/components/Settings.vue'), 'utf8')).template.content;
+const telegramParent = new Vue({ data: { EVNotify: { version: 'V2' } } });
+const telegramView = new Vue(Object.assign({}, Settings, compiler.compileToFunctions(settingsTemplate), { parent: telegramParent }));
+const findTelegramLink = node => {
+  if (node.tag === 'a' && node.data && node.data.attrs && /^https:\/\/t\.me\//.test(node.data.attrs.href)) return node;
+  return (node.children || []).map(findTelegramLink).find(Boolean);
+};
+for (const version of ['V2', 'V3', 'V2']) {
+  telegramParent.EVNotify.version = version;
+  for (const telegram of [null, 12345]) {
+    telegramView.localSettings = { telegram };
+    const link = findTelegramLink(telegramView._render());
+    assert(link, 'both Telegram dialog branches must render a bot link');
+    assert.strictEqual(link.data.attrs.href, version === 'V3' ? 'https://t.me/EVNotify3Bot' : 'https://t.me/evnotify2bot');
+  }
+}
+telegramView.$destroy(); telegramParent.$destroy();
 
 // Exercise the control selected by the actual Settings template, including its
 // Vuetify value watcher and input event. Script-only mocks miss slider clamping.

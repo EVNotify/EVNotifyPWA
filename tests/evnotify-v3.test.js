@@ -130,8 +130,19 @@ assert(result.historyError.includes('Premium required'));
 client.getLatestLog((err, latest) => { assert.strictEqual(err, null); result = latest; });
 take('GET', 'logs/ABC123').respond(200, [log]);
 assert.strictEqual(result.id, 'log-1');
-client.updateLog({ id: 'log-1', title: 'New', charge: true }, () => {});
-take('PATCH', 'logs/ABC123/log-1', { title: 'New', type: 'charge' }).respond(200, {});
+for (const type of ['charge', 'drive', 'unknown']) {
+  client.getLog('log-1', (err, detail) => { assert.strictEqual(err, null); result = detail; });
+  take('GET', 'logs/ABC123/log-1').respond(200, Object.assign({}, log, { type }));
+  take('GET', 'logs/ABC123/log-1/history').respond(200, []);
+  assert.strictEqual(result.type, type);
+  result.title = 'Edited ' + type;
+  client.updateLog(result, () => {});
+  take('PATCH', 'logs/ABC123/log-1', { title: result.title, type }).respond(200, {});
+}
+for (const charge of [true, false]) {
+  client.updateLog({ id: 'log-1', title: 'New', charge }, () => {});
+  take('PATCH', 'logs/ABC123/log-1', { title: 'New', type: charge ? 'charge' : 'drive' }).respond(200, {});
+}
 client.deleteLog('log-1', (err) => { assert.strictEqual(err, null); });
 take('DELETE', 'logs/ABC123/log-1').respond(204);
 
@@ -182,7 +193,7 @@ client.getLogs(0, (err, logs) => { assert.strictEqual(err, null); result = logs;
 take('GET', 'logs/ABC123?type=drive').respond(200, [{ id: 'live', status: 'running', startDate: log.startDate, updatedAt: log.endDate, averageSpeed: 10 }]);
 assert.strictEqual(result[0].end, null);
 assert.strictEqual(result[0].status, 'running');
-assert.strictEqual(result[0].average_speed, 36);
+assert.strictEqual(result[0].average_speed, 10, 'V3 summary speeds are already km/h');
 assert.strictEqual(result[0].updated_at, 1767229200);
 client.getLog('log-1', (err, detail) => { assert.strictEqual(err, null); result = detail; });
 take('GET', 'logs/ABC123/log-1').respond(200, log);

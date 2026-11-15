@@ -61,7 +61,8 @@ var fromV3Sync = function (sync) {
     if (sync.socBMS != null) result.soc_bms = sync.socBMS;
     if (sync.cec != null) result.cumulative_energy_charged = sync.cec;
     if (sync.ced != null) result.cumulative_energy_discharged = sync.ced;
-    if (sync.speed != null) result.gps_speed = sync.speed;
+    // V3 sends km/h; shared views convert legacy gps_speed from m/s to km/h.
+    if (sync.speed != null) result.gps_speed = sync.speed / 3.6;
     // Freshness follows the observation time, including delayed uploads.
     var timestamp = toUnixSeconds(sync.timestamp) || toUnixSeconds(sync.updatedAt);
     result.last_soc = timestamp;
@@ -92,7 +93,7 @@ var fromV3Log = function (log) {
     result.start_ced = log.startCED;
     result.end_ced = log.endCED;
     result.average_kw = log.averageKW;
-    if (log.averageSpeed != null) result.average_speed = log.averageSpeed * 3.6;
+    if (log.averageSpeed != null) result.average_speed = log.averageSpeed;
     result.stats = fromV3History(log.history);
     return result;
 };
@@ -114,7 +115,7 @@ var resolveRoute = function (self, type, fnc, data) {
         case 'extended':
         case 'location': return { method: 'get', path: logs + '/last-sync' };
         case 'logs': return { method: 'get', path: logs, data: { type: data.charge ? 'charge' : 'drive' } };
-        case 'logdetail': return type.toLowerCase() === 'get' ? { method: 'get', path: logs + '/' + encodeURIComponent(data.id) } : { method: 'patch', path: logs + '/' + encodeURIComponent(data.log.id), data: { title: data.log.title, type: data.log.charge ? 'charge' : 'drive' } };
+        case 'logdetail': return type.toLowerCase() === 'get' ? { method: 'get', path: logs + '/' + encodeURIComponent(data.id) } : { method: 'patch', path: logs + '/' + encodeURIComponent(data.log.id), data: { title: data.log.title, type: data.log.type != null ? data.log.type : (data.log.charge ? 'charge' : 'drive') } };
         default: return null;
     }
 };

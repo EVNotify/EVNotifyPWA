@@ -69,7 +69,7 @@
             <v-card>
                 <v-card-title class="headline">Telegram integration</v-card-title>
                 <v-card-text v-if="localSettings.telegram">
-                    You have linked your account with <a href="https://t.me/evnotify2bot">Telegram</a>.
+                    You have linked your account with <a :href="telegramBotUrl">Telegram</a>.
                     In order to remove the integration, simply enter <b><i>/unsubscribe</i></b> within bot.
                 </v-card-text>
                 <v-card-text v-else>
@@ -78,7 +78,7 @@
                     Enter the token (<b>{{ token }}</b>) - never share it with people you do not trust.
                     You can copy the token and write it to the bot after typing <b><i>/subscribe</i></b>.
                     Just as well, you can also unsubscribe with <b><i>/unsubscribe</i></b> with telegram.
-                    Open the bot <a href="https://t.me/evnotify2bot">here</a>.
+                    Open the bot <a :href="telegramBotUrl">here</a>.
                 </v-card-text>
                 <v-card-actions>
                     <v-spacer></v-spacer>
@@ -199,6 +199,9 @@
             },
             isV3() {
                 return this.$root.EVNotify.version === 'V3';
+            },
+            telegramBotUrl() {
+                return this.isV3 ? 'https://t.me/EVNotify3Bot' : 'https://t.me/evnotify2bot';
             },
             primaryColor() {
                 return (Storage.getValue('darkMode') ? 'primary darken-1' : 'primary');
