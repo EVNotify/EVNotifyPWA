@@ -5,7 +5,8 @@ PWA Webinterface for EVNotify
 
 Node.js 8.x is supported for production builds, and Node.js 22.x is supported for
 local development. `nvm use` selects Node 8.17.0 from `.nvmrc`; use `nvm use 22`
-to select Node 22 instead. CI runs the tests, lint, and build on both versions.
+to select Node 22 instead. GitHub Actions runs the tests, lint, and build on both
+versions.
 
 The existing Vue CLI 3/webpack 4 toolchain needs OpenSSL's legacy provider on
 Node 22. The `serve` and `build` scripts detect the runtime's OpenSSL version and
@@ -41,6 +42,9 @@ account or Google Maps.
 ```
 npm run lint:check
 ```
+
+ESLint checks the application, tests, configuration, and `scripts/` directory.
+Hound's duplicate JSHint checks are disabled in favor of this CI check.
 
 ### V3 vehicle estimates
 

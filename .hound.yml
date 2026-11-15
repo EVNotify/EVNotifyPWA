@@ -1,0 +1,3 @@
+# ESLint is the JavaScript checker; CI runs npm run lint:check.
+jshint:
+  enabled: false
