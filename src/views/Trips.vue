@@ -50,6 +50,7 @@ export default {
   components: { BottomNavigation },
   data: () => ({
     loading: true,
+    listRequestGeneration: 0,
     busy: false,
     error: '',
     trips: [],
@@ -70,8 +71,10 @@ export default {
     formatDate(value) { return value ? new Date(value).toLocaleString() : 'Unknown date'; },
     tripUrl(code) { return 'https://trip.evnotify.de/?code=' + encodeURIComponent(code); },
     load() {
+      const generation = ++this.listRequestGeneration;
       this.loading = true;
       this.$root.EVNotify.getTrips((err, res) => {
+        if (generation !== this.listRequestGeneration) return;
         this.loading = false;
         if (err) { this.error = 'Could not load trips (' + err + ').'; return; }
         const trips = res && Array.isArray(res.data) ? res.data.slice() : [];
