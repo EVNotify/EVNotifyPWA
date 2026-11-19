@@ -293,6 +293,10 @@ EVNotify.prototype.changePW = function (oldpassword, newpassword, callback) {
  */
 EVNotify.prototype.renewToken = function (password, callback) {
     var self = this;
+    var session = {
+        generation: self._sessionGeneration, version: self.version,
+        baseUrl: self.baseUrl, akey: self.akey, token: self.token
+    };
 
     // check authentication
     if (!self.akey || !self.token) {
@@ -303,6 +307,10 @@ EVNotify.prototype.renewToken = function (password, callback) {
             token: self.token,
             password: password
         }, function (err, res) {
+            if (!matchesSession(self, session)) {
+                if (typeof callback === 'function') callback('Session changed', null);
+                return;
+            }
             // attach new token
             self.token = ((!err && res && res.data && res.data.token) ? res.data.token : self.token);
             if (typeof callback === 'function') callback(err, ((err) ? null : self.token));

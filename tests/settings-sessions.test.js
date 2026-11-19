@@ -173,5 +173,79 @@ for (const version of ['V2', 'V3']) {
   assert.strictEqual(events[events.length - 1], 'unsave');
 }
 
+for (const version of ['V2', 'V3']) {
+  for (const failed of [false, true]) {
+    const { page, client } = fixture(version);
+    element(page, 'email').value = 'edited-a@example.com';
+    page.showSaveIcon();
+    const session = page.settingsSession;
+    const before = { reads: sent.length, events: events.slice() };
+    page.password = 'password';
+    page.resetToken();
+    pending.shift().respond(failed ? 503 : 200, failed ? {} : { token: 'new-token' });
+    const token = failed ? 'token-a' : 'new-token';
+    assert.strictEqual(client.token, token);
+    assert.strictEqual(memory.user.token, token);
+    assert.strictEqual(page.settingsSession.token, token);
+    if (failed) assert.strictEqual(page.settingsSession, session);
+    assert.strictEqual(sent.length, before.reads + 1, 'token reset must not reload settings');
+    assert.strictEqual(element(page, 'email').value, 'edited-a@example.com');
+    assert.deepStrictEqual(events, before.events, 'token reset must preserve the unsaved indicator');
+    assert.strictEqual(page.snackbarType, failed ? 'error' : 'success');
+    page.saveSettings();
+    respondSettings(original);
+    const write = pending.shift();
+    const body = JSON.parse(write.body);
+    assert.strictEqual((version === 'V3' ? body : body.settings).email, 'edited-a@example.com');
+    if (version === 'V3') assert.strictEqual(write.headers.Authorization, 'AAAAAA ' + token);
+    else assert.strictEqual(body.token, token);
+    write.respond(200, {});
+    respondSettings(Object.assign({}, original, { email: 'edited-a@example.com' }));
+    assert.strictEqual(page.settingsError, '');
+    assert.strictEqual(memory.settings.email, 'edited-a@example.com');
+    assert.strictEqual(events[events.length - 1], 'unsave');
+  }
+
+  for (const name of Object.keys(changes)) {
+    for (const failed of [false, true]) {
+      const { page, client } = fixture(version);
+      element(page, 'email').value = 'edited-a@example.com';
+      const session = page.settingsSession;
+      page.password = 'password';
+      page.resetToken();
+      const request = pending.shift();
+      changes[name](page, client);
+      const active = page.$root.EVNotify;
+      if (name !== 'logout') memory.user = { akey: active.akey, token: active.token, apiVersion: active.version };
+      const before = { token: active.token, user: memory.user, writes: writes.length, events: events.length };
+      request.respond(failed ? 503 : 200, failed ? {} : { token: 'stale-token' });
+      const label = `${version}/reset/${name}/${failed ? 'failure' : 'success'}`;
+      assert.strictEqual(page.settingsSession, session, label + ': stale resets must not rebind the form');
+      assert.strictEqual(memory.user, before.user, label + ': stale resets must not replace stored credentials');
+      assert.strictEqual(writes.length, before.writes, label + ': stale resets must not write storage');
+      assert.strictEqual(events.length, before.events, label + ': stale resets must not change the unsaved indicator');
+      assert.strictEqual(element(page, 'email').value, 'edited-a@example.com');
+      if (name !== 'logout' && name !== 'destroy') {
+        assert.strictEqual(active.token, before.token, label + ': stale resets must not replace active credentials');
+      }
+      const count = sent.length;
+      page.saveSettings();
+      assert.strictEqual(sent.length, count, label + ': stale edits must remain blocked');
+    }
+  }
+
+  const { page, client } = fixture(version);
+  const oldSession = page.settingsSession;
+  changes.account(page, client);
+  memory.user = { akey: client.akey, token: client.token, apiVersion: version };
+  page.password = 'password';
+  page.resetToken();
+  pending.shift().respond(200, { token: 'new-account-token' });
+  assert.strictEqual(page.settingsSession, oldSession, 'a valid reset must not authorize edits from an older session');
+  page.saveSettings();
+  assert.strictEqual(pending.length, 0);
+  assert(page.settingsError.includes('session changed'));
+}
+
 assert.strictEqual(pending.length, 0);
 console.log('Settings session isolation and recovery tests passed');

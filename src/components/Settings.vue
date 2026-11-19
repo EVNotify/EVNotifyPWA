@@ -195,6 +195,10 @@
         baseUrl: client.baseUrl, akey: client.akey, token: client.token
     });
 
+    const matchesSession = (left, right) => left && right && left.client === right.client &&
+        left.generation === right.generation && left.version === right.version &&
+        left.baseUrl === right.baseUrl && left.akey === right.akey && left.token === right.token;
+
     export default {
         computed: {
             v3Cars() { return v3Cars; },
@@ -425,10 +429,7 @@
             },
             checkSettingsSession(session) {
                 if (this.disposed) return false;
-                const client = this.$root.EVNotify;
-                if (session && client === session.client && client._sessionGeneration === session.generation &&
-                    client.version === session.version && client.baseUrl === session.baseUrl &&
-                    client.akey === session.akey && client.token === session.token) return true;
+                if (matchesSession(session, captureSession(this.$root.EVNotify))) return true;
                 this.saving = false;
                 this.settingsLoading = false;
                 this.settingsError = 'Your session changed. Reload settings before saving again.';
@@ -540,11 +541,16 @@
 
                 if (self.password.length < 6) return self.errorMessage = 'Password must be at least 6 characters.';
 
-                self.$root.EVNotify.renewToken(self.password, (err, token) => {
+                const session = captureSession(self.$root.EVNotify);
+                session.client.renewToken(self.password, (err, token) => {
+                    const renewed = Object.assign({}, session, { token: err ? session.token : token });
+                    if (!self.checkSettingsSession(renewed)) return;
                     self.password = '';
                     self.resetTokenDialog = false;
                     self.showSnackbar = true;
                     if (!err && token) {
+                        // Only this form's own token rotation may preserve its pending edits.
+                        if (matchesSession(self.settingsSession, session)) self.settingsSession = renewed;
                         const user = Storage.getValue('user', {});
 
                         user.token = token;
