@@ -65,7 +65,7 @@
                         <v-timeline-item class="mb-1">
                             <v-flex>
                                 <div class="cadivtion">{{ logDate }}</div>
-                                <div v-if="startCEC != null || startCED != null">
+                                <div v-if="chargedEnergy != null || dischargedEnergy != null || startCEC != null || startCED != null">
                                     <div class="caption" v-if="log.charge">charged: {{ formatNumber(chargedEnergy) }} kWh {{ startODO != null ? ' - ' + startODO + ' km (ODO)' : '' }}</div>
                                     <div class="caption" v-else>consumed: {{ formatNumber(dischargedEnergy)}} kWh<br>recuperated: {{ formatNumber(chargedEnergy) }} kWh</div>
                                 </div>
@@ -311,8 +311,14 @@
                 const end = logUtils.effectiveEnd(this.log);
                 return end && this.log.start && end >= this.log.start && Number.isFinite(this.avgSpeed) ? Number((this.avgSpeed * ((end - this.log.start) / 3600)).toFixed(2)) : null;
             },
-            chargedEnergy() { return [this.endCEC, this.startCEC].every(Number.isFinite) ? this.endCEC - this.startCEC : null; },
-            dischargedEnergy() { return [this.endCED, this.startCED].every(Number.isFinite) ? this.endCED - this.startCED : null; },
+            chargedEnergy() {
+                if (Number.isFinite(this.log.recharged_kwh)) return this.log.recharged_kwh;
+                return [this.endCEC, this.startCEC].every(Number.isFinite) ? this.endCEC - this.startCEC : null;
+            },
+            dischargedEnergy() {
+                if (Number.isFinite(this.log.discharged_kwh)) return this.log.discharged_kwh;
+                return [this.endCED, this.startCED].every(Number.isFinite) ? this.endCED - this.startCED : null;
+            },
             consumption() {
                 return this.distance > 0 && [this.chargedEnergy, this.dischargedEnergy].every(Number.isFinite) ?
                     (this.dischargedEnergy - this.chargedEnergy) / this.distance * 100 : null;

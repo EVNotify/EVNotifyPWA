@@ -70,6 +70,27 @@ assert.strictEqual(detail.distance, null);
 assert.strictEqual(detail.chargedEnergy, null);
 assert.strictEqual(detail.consumption, null);
 
+// Summary totals take precedence, including zero; legacy counters remain a fallback.
+for (const total of [0, 5]) {
+  detail.log = { recharged_kwh: total, discharged_kwh: total, start_cec: 10, end_cec: 22, start_ced: 20, end_ced: 40, distance: 100 };
+  assert.strictEqual(detail.chargedEnergy, total);
+  assert.strictEqual(detail.dischargedEnergy, total);
+  assert.strictEqual(detail.consumption, 0);
+}
+for (const total of [undefined, null, NaN, Infinity, '5']) {
+  detail.log = { recharged_kwh: total, discharged_kwh: total, start_cec: 10, end_cec: 22, start_ced: 20, end_ced: 40, distance: 100 };
+  assert.strictEqual(detail.chargedEnergy, 12);
+  assert.strictEqual(detail.dischargedEnergy, 20);
+  assert.strictEqual(detail.consumption, 8);
+  delete detail.log.end_cec;
+  delete detail.log.end_ced;
+  assert.strictEqual(detail.chargedEnergy, null);
+  assert.strictEqual(detail.dischargedEnergy, null);
+  assert.strictEqual(detail.consumption, null);
+}
+detail.log = { recharged_kwh: 5, discharged_kwh: 20, distance: 0 };
+assert.strictEqual(detail.consumption, null);
+
 detail.log = { status: 'running', current_soc: 67, stats: [], historyError: 'Offline' };
 assert.strictEqual(detail.endSOC, '67%', 'running summary must use current SOC when history is unavailable');
 detail.log.current_soc = 0;
@@ -364,6 +385,23 @@ class ControlledXHR {
 }
 const Client = load('src/plugins/evnotify.js', {}, { XMLHttpRequest: ControlledXHR }).default;
 
+// A failed history request must not hide the energy totals from a V3 summary.
+const energyClient = new Client('ABC123', 'token', 'V3');
+const energyPage = instance(Log);
+energyClient.getLog('energy-log', (err, log) => {
+  assert.strictEqual(err, null);
+  energyPage.log = log;
+});
+inFlight.shift().respond(200, {
+  id: 'energy-log', type: 'drive', status: 'running', startDate: '2026-01-01T00:00:00Z',
+  rechargedKWh: 5, dischargedKWh: 20, distance: 100
+});
+inFlight.shift().respond(503, { message: 'Temporary history failure' });
+assert(energyPage.log.historyError.includes('Temporary history failure'));
+assert.strictEqual(energyPage.chargedEnergy, 5);
+assert.strictEqual(energyPage.dischargedEnergy, 20);
+assert.strictEqual(energyPage.consumption, 15);
+
 // V3 uploads km/h; shared log views expect history in m/s and summaries in km/h.
 for (const speed of [50, 0, null, undefined]) {
   const speedClient = new Client('ABC123', 'token', 'V3');
@@ -489,43 +527,100 @@ const Premium = load('src/views/Premium.vue', Object.assign({}, overrides, {
   '../utils/storage': { getValue: () => ({ akey: 'ABC123' }) }
 })).default;
 const premiumTemplate = compiler.parseComponent(fs.readFileSync(path.join(__dirname, '../src/views/Premium.vue'), 'utf8')).template.content;
+const premiumStatus = view => findNode(view._render(), node => node.tag === 'p' &&
+  (node.children || []).some(child => child.text && /Premium until |No active premium access\./.test(child.text)));
+const premiumRetry = view => findNode(view._render(), node => node.tag === 'v-btn' &&
+  (node.children || []).some(child => child.text === 'Retry status'));
 for (const statusError of [null, 'Offline']) {
-  let finishStatus, finishRedemption, redemptions = 0;
+  let finishStatus, finishRedemption, redemptions = 0, statusRequests = 0;
   const premiumParent = new Vue({ data: { EVNotify: {
     version: 'V3',
-    getPremium(cb) { finishStatus = cb; },
+    getPremium(cb) { statusRequests++; finishStatus = cb; },
     redeemVoucher(code, cb) { assert.strictEqual(code, 'VOUCHER'); redemptions++; finishRedemption = cb; }
   } } });
   const premiumView = new Vue(Object.assign({}, Premium, compiler.compileToFunctions(premiumTemplate), { parent: premiumParent }));
   const redeemButton = () => findNode(premiumView._render(), node => node.tag === 'v-btn' &&
     (node.children || []).some(child => child.text === 'Redeem voucher'));
   premiumView.voucher = 'VOUCHER';
+  assert.strictEqual(premiumStatus(premiumView), undefined);
   assert.strictEqual(redeemButton().data.attrs.disabled, true, 'redemption must be disabled while status is loading');
   premiumView.redeem();
   assert.strictEqual(redemptions, 0, 'the method must also reject redemption while loading');
   finishStatus(statusError, statusError ? null : { data: { premiumUntil: null } });
   assert.strictEqual(premiumView.loading, false);
   assert.strictEqual(redeemButton().data.attrs.disabled, false, 'status errors must not prevent redemption');
-  if (statusError) assert(premiumView.error.includes(statusError));
+  assert.strictEqual(!!premiumStatus(premiumView), !statusError, 'failed status lookups must not claim inactive Premium');
+  if (statusError) assert(premiumView.statusError.includes(statusError));
   redeemButton().data.on.click();
   premiumView.redeem();
+  premiumView.load();
+  assert.strictEqual(statusRequests, 1, 'status requests must wait for redemption');
+  if (statusError) assert.strictEqual(premiumRetry(premiumView).data.attrs.disabled, true);
   assert.strictEqual(redemptions, 1, 'only one redemption may be pending');
   assert.strictEqual(redeemButton().data.attrs.disabled, true);
   finishRedemption('Invalid voucher');
   assert(premiumView.error.includes('Invalid voucher'));
+  assert.strictEqual(!!premiumStatus(premiumView), !statusError, 'voucher errors must preserve known status');
+  if (statusError) assert(premiumView.statusError.includes(statusError), 'lookup and voucher errors are independent');
   assert.strictEqual(premiumView.voucher, 'VOUCHER', 'failed redemption must preserve the voucher for retry');
   assert.strictEqual(redeemButton().data.attrs.disabled, false);
   premiumView.redeem();
   const expiry = '2026-12-31T23:00:00Z';
   finishRedemption(null, { data: { premiumUntil: expiry } });
   assert.strictEqual(premiumView.premiumUntil, expiry);
+  assert.strictEqual(premiumView.statusKnown, true, 'successful redemption establishes Premium status');
+  assert.strictEqual(premiumView.statusError, '');
+  assert(premiumStatus(premiumView));
+  assert.strictEqual(premiumRetry(premiumView), undefined);
   assert.strictEqual(premiumView.error, '');
   assert.strictEqual(premiumView.busy, false);
   assert.strictEqual(premiumView.voucher, '');
   assert.strictEqual(redeemButton().data.attrs.disabled, true, 'empty vouchers must not be redeemable');
   premiumView.redeem();
   assert.strictEqual(redemptions, 2);
+  premiumView.voucher = 'VOUCHER';
+  premiumView.redeem();
+  finishRedemption('Invalid voucher');
+  assert.strictEqual(premiumView.premiumUntil, expiry);
+  assert(premiumStatus(premiumView), 'voucher failure must not hide previously known active Premium');
   premiumView.$destroy(); premiumParent.$destroy();
+}
+
+// Retry the lookup through the rendered button, recovering to either status.
+for (const premiumUntil of [null, '2026-12-31T23:00:00Z']) {
+  let finishStatus, statusRequests = 0, redemptions = 0;
+  const retryParent = new Vue({ data: { EVNotify: {
+    version: 'V3',
+    getPremium(cb) { statusRequests++; finishStatus = cb; },
+    redeemVoucher() { redemptions++; }
+  } } });
+  const retryView = new Vue(Object.assign({}, Premium, compiler.compileToFunctions(premiumTemplate), { parent: retryParent }));
+  finishStatus('Offline');
+  assert.strictEqual(premiumStatus(retryView), undefined);
+  const retry = premiumRetry(retryView);
+  assert(retry, 'failed lookups must expose a retry action');
+  retry.data.on.click();
+  retry.data.on.click();
+  assert.strictEqual(statusRequests, 2, 'repeated clicks must not overlap lookups');
+  assert.strictEqual(premiumRetry(retryView).data.attrs.disabled, true);
+  retryView.voucher = 'VOUCHER';
+  retryView.redeem();
+  assert.strictEqual(redemptions, 0, 'redemption must wait for a retry');
+  finishStatus('Still offline');
+  assert(retryView.statusError.includes('Still offline'));
+  assert.strictEqual(premiumStatus(retryView), undefined);
+  assert.strictEqual(premiumRetry(retryView).data.attrs.disabled, false);
+  premiumRetry(retryView).data.on.click();
+  finishStatus(null, { data: { premiumUntil } });
+  assert.strictEqual(retryView.statusError, '');
+  assert.strictEqual(retryView.premiumUntil, premiumUntil);
+  const status = premiumStatus(retryView);
+  assert(status && status.children.some(child => child.text.includes(premiumUntil ? 'Premium until ' : 'No active premium access.')));
+  assert.strictEqual(premiumRetry(retryView), undefined);
+  retryView.load();
+  finishStatus('Offline again');
+  assert.strictEqual(premiumStatus(retryView), undefined, 'a failed refresh must not display stale status');
+  retryView.$destroy(); retryParent.$destroy();
 }
 
 // Render the actual retry button and invoke its click handler without a browser.
@@ -547,6 +642,12 @@ assert.strictEqual(findRetry(view._render()).data.attrs.disabled, true);
 finishHistory(null, []);
 assert.strictEqual(findRetry(view._render()), undefined, 'successful retry removes the warning and button');
 assert.strictEqual(view.log.title, 'Edited');
+for (const charge of [false, true]) {
+  view.log = { id: 'energy-log', charge, recharged_kwh: 5, discharged_kwh: 20, distance: 100, stats: [] };
+  const energySummary = findNode(view._render(), node => node.tag === 'div' &&
+    (node.children || []).some(child => child.text && child.text.includes(charge ? 'charged: 5.0 kWh' : 'consumed: 20.0 kWh')));
+  assert(energySummary, 'summary totals must render without cumulative start/end readings');
+}
 view.$destroy(); parent.$destroy();
 
 // Check the rendered Telegram links for both subscription states and API versions.
