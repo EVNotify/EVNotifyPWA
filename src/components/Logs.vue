@@ -60,12 +60,17 @@
             },
             setSubtitle(log) {
                 let text = '';
-                if (log.start_soc != null && log.end_soc != null) text = `${log.start_soc}% -> ${log.end_soc}%`;
-                if (!log.charge && log.distance > 0 && [log.start_cec, log.end_cec, log.start_ced, log.end_ced].every(Number.isFinite)) {
-                    const consumption = ((log.end_ced - log.start_ced - (log.end_cec - log.start_cec)) / log.distance * 100).toFixed(1);
+                const endSOC = logUtils.running(log) && log.current_soc != null ? log.current_soc : log.end_soc;
+                if (log.start_soc != null && endSOC != null) text = `${log.start_soc}% -> ${endSOC}%`;
+                const chargedEnergy = Number.isFinite(log.recharged_kwh) ? log.recharged_kwh :
+                    [log.start_cec, log.end_cec].every(Number.isFinite) ? log.end_cec - log.start_cec : null;
+                const dischargedEnergy = Number.isFinite(log.discharged_kwh) ? log.discharged_kwh :
+                    [log.start_ced, log.end_ced].every(Number.isFinite) ? log.end_ced - log.start_ced : null;
+                if (!log.charge && log.distance > 0 && [chargedEnergy, dischargedEnergy].every(Number.isFinite)) {
+                    const consumption = ((dischargedEnergy - chargedEnergy) / log.distance * 100).toFixed(1);
                     text += ` (Ø ${consumption} kWh/100km)`;
-                } else if (log.charge && [log.start_cec, log.end_cec].every(Number.isFinite)) {
-                    text += ` (${(log.end_cec - log.start_cec).toFixed(1)} kWh)`;
+                } else if (log.charge && Number.isFinite(chargedEnergy)) {
+                    text += ` (${chargedEnergy.toFixed(1)} kWh)`;
                 }
                 return text;
             },

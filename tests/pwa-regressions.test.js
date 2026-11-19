@@ -220,6 +220,41 @@ assert(list.convertSubHeader('10_2026').includes('November'));
 assert(list.convertDates(running.start, null, 'running').endsWith('Ongoing'));
 assert(list.setSubtitle({ start_soc: 0, end_soc: 20 }).startsWith('0%'));
 
+// Running V3 summaries use current SOC and energy totals without fetching history.
+const runningCharge = { charge: true, status: 'running', start_soc: 40, current_soc: 60, recharged_kwh: 5 };
+assert.strictEqual(list.setSubtitle(runningCharge), '40% -> 60% (5.0 kWh)');
+assert.strictEqual(list.setSubtitle(Object.assign({}, runningCharge, { end_soc: 50 })), '40% -> 60% (5.0 kWh)');
+assert.strictEqual(list.setSubtitle(Object.assign({}, runningCharge, { current_soc: 0 })), '40% -> 0% (5.0 kWh)');
+assert.strictEqual(list.setSubtitle(Object.assign({}, runningCharge, { current_soc: null, end_soc: 50 })), '40% -> 50% (5.0 kWh)');
+assert.strictEqual(list.setSubtitle({ charge: true, status: 'finished', start_soc: 0, end_soc: 0, current_soc: 60,
+  recharged_kwh: 0, start_cec: 10, end_cec: 22 }), '0% -> 0% (0.0 kWh)');
+
+const driveSummary = { charge: false, status: 'finished', start_soc: 80, end_soc: 60, current_soc: 70,
+  distance: 100, recharged_kwh: 5, discharged_kwh: 20, start_cec: 10, end_cec: 22, start_ced: 20, end_ced: 40 };
+assert.strictEqual(list.setSubtitle(driveSummary), '80% -> 60% (Ø 15.0 kWh/100km)');
+assert.strictEqual(list.setSubtitle(Object.assign({}, driveSummary, { status: 'running' })), '80% -> 70% (Ø 15.0 kWh/100km)');
+assert.strictEqual(list.setSubtitle(Object.assign({}, driveSummary, { recharged_kwh: 0, discharged_kwh: 0 })),
+  '80% -> 60% (Ø 0.0 kWh/100km)');
+for (const distance of [0, -1, undefined, null]) {
+  assert.strictEqual(list.setSubtitle(Object.assign({}, driveSummary, { distance })), '80% -> 60%');
+}
+
+// Legacy counters remain usable when V3 totals are absent or invalid.
+for (const total of [undefined, null, NaN, Infinity, '5']) {
+  assert.strictEqual(list.setSubtitle({ charge: true, start_soc: 0, end_soc: 20,
+    recharged_kwh: total, start_cec: 10, end_cec: 22 }), '0% -> 20% (12.0 kWh)');
+  assert.strictEqual(list.setSubtitle(Object.assign({}, driveSummary, { recharged_kwh: total, discharged_kwh: total })),
+    '80% -> 60% (Ø 8.0 kWh/100km)');
+  assert.strictEqual(list.setSubtitle({ charge: true, start_soc: 0, end_soc: 20, recharged_kwh: total }), '0% -> 20%');
+}
+assert.strictEqual(list.setSubtitle(Object.assign({}, driveSummary, { discharged_kwh: null })),
+  '80% -> 60% (Ø 15.0 kWh/100km)');
+assert.strictEqual(list.setSubtitle({ charge: true, start_cec: 0, end_cec: 5 }), ' (5.0 kWh)');
+assert.strictEqual(list.setSubtitle({ charge: true, start_soc: 40, start_cec: 100 }), '');
+assert.strictEqual(list.setSubtitle({ charge: true, current_soc: 60 }), '');
+assert.strictEqual(list.setSubtitle({ charge: false, start_soc: 80, end_soc: 60, distance: 100, discharged_kwh: 20 }),
+  '80% -> 60%');
+
 // V3 must include unknown logs, using one unfiltered request rather than two filtered lists.
 const v3List = instance(Logs, { $root: { MomentJS: moment } });
 const logTime = (month, day) => Date.UTC(2026, month, day, 12) / 1000;
