@@ -83,23 +83,32 @@
                     this.loading = false;
                     this.loadError = 'Could not load logs (' + err + ').';
                 };
-                this.$root.EVNotify.getLogs(0, (err, drives) => {
+                const finish = (err, records) => {
+                    if (err || !Array.isArray(records)) return fail(err || 'Invalid response');
+                    const combined = records.slice().sort((a, b) =>
+                        Number(logUtils.running(b)) - Number(logUtils.running(a)) || logUtils.date(b) - logUtils.date(a));
+                    const logs = {};
+                    combined.forEach(log => {
+                        const time = logUtils.date(log);
+                        const date = time ? new Date(time * 1000) : null;
+                        const key = date ? `${date.getMonth()}_${date.getFullYear()}` : 'unknown';
+                        if (!logs[key]) logs[key] = [];
+                        logs[key].push(log);
+                    });
+                    this.logs = logs;
+                    this.loaded = true;
+                    this.loading = false;
+                };
+                const client = this.$root.EVNotify;
+                if (client.version === 'V3') {
+                    client.getLogs(null, finish);
+                    return;
+                }
+                client.getLogs(0, (err, drives) => {
                     if (err || !Array.isArray(drives)) return fail(err || 'Invalid response');
-                    this.$root.EVNotify.getLogs(1, (chargeErr, charges) => {
+                    client.getLogs(1, (chargeErr, charges) => {
                         if (chargeErr || !Array.isArray(charges)) return fail(chargeErr || 'Invalid response');
-                        const combined = charges.concat(drives).sort((a, b) =>
-                            Number(logUtils.running(b)) - Number(logUtils.running(a)) || logUtils.date(b) - logUtils.date(a));
-                        const logs = {};
-                        combined.forEach(log => {
-                            const time = logUtils.date(log);
-                            const date = time ? new Date(time * 1000) : null;
-                            const key = date ? `${date.getMonth()}_${date.getFullYear()}` : 'unknown';
-                            if (!logs[key]) logs[key] = [];
-                            logs[key].push(log);
-                        });
-                        this.logs = logs;
-                        this.loaded = true;
-                        this.loading = false;
+                        finish(null, charges.concat(drives));
                     });
                 });
             }

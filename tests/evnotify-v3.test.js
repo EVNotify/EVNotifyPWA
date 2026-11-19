@@ -118,6 +118,13 @@ client.getLogs(1, (err, logs) => { assert.strictEqual(err, null); result = logs;
 take('GET', 'logs/ABC123?type=charge').respond(200, [log]);
 assert.strictEqual(result[0].charge, true);
 assert.strictEqual(result[0].start_soc, 20);
+client.getLogs(null, (err, logs) => { assert.strictEqual(err, null); result = logs; });
+take('GET', 'logs/ABC123').respond(200, [Object.assign({}, log, { id: 'unknown-log', type: 'unknown' })]);
+assert.strictEqual(result.length, 1);
+assert.strictEqual(result[0].id, 'unknown-log');
+assert.strictEqual(result[0].type, 'unknown');
+assert.strictEqual(result[0].start, 1767225600);
+assert.strictEqual(result[0].start_soc, 20);
 client.getLog('log-1', (err, detail) => { assert.strictEqual(err, null); result = detail; });
 take('GET', 'logs/ABC123/log-1').respond(200, log);
 take('GET', 'logs/ABC123/log-1/history').respond(200, [sync]);
@@ -181,6 +188,16 @@ const v2Request = requests.pop();
 assert.strictEqual(v2Request.method, 'GET');
 assert.strictEqual(v2Request.url, 'https://app.evnotify.de/settings?akey=ABC123&token=token');
 assert.strictEqual(v2Request.headers.Authorization, undefined);
+for (const charge of [0, 1]) {
+  v2.getLogs(charge, (err, logs) => { assert.strictEqual(err, null); result = logs; });
+  const request = requests.pop();
+  assert.strictEqual(request.method, 'GET');
+  assert.strictEqual(request.url, 'https://app.evnotify.de/logs?akey=ABC123&token=token&charge=' + charge);
+  assert.strictEqual(request.headers.Authorization, undefined);
+  request.respond(200, [{ id: 'v2-log', charge, start: 100, end: 200 }]);
+  assert.strictEqual(result[0].charge, charge);
+  assert.strictEqual(result[0].start, 100);
+}
 
 client.setSettings({ email: '  ', capacity: null, push: true }, () => {});
 take('PATCH', 'settings/ABC123', { email: null, capacity: null }).respond(200, {});

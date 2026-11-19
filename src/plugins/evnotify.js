@@ -114,7 +114,7 @@ var resolveRoute = function (self, type, fnc, data) {
         case 'soc': return type.toLowerCase() === 'get' ? { method: 'get', path: logs + '/last-sync' } : { method: 'post', path: logs, data: { socDisplay: data.display, socBMS: data.bms, timestamp: new Date().toISOString() } };
         case 'extended':
         case 'location': return { method: 'get', path: logs + '/last-sync' };
-        case 'logs': return { method: 'get', path: logs, data: { type: data.charge ? 'charge' : 'drive' } };
+        case 'logs': return { method: 'get', path: logs, data: data.charge === null ? null : { type: data.charge ? 'charge' : 'drive' } };
         case 'logdetail': return type.toLowerCase() === 'get' ? { method: 'get', path: logs + '/' + encodeURIComponent(data.id) } : { method: 'patch', path: logs + '/' + encodeURIComponent(data.log.id), data: { title: data.log.title, type: data.log.type != null ? data.log.type : (data.log.charge ? 'charge' : 'drive') } };
         default: return null;
     }
@@ -463,6 +463,7 @@ EVNotify.prototype.getLocation = function (callback) {
     return self;
 };
 
+// V3 accepts null to list every log type, including unknown.
 EVNotify.prototype.getLogs = function (charge, callback) {
     var self = this;
 

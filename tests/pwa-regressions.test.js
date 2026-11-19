@@ -177,15 +177,20 @@ assert.strictEqual(historyCalls, 4, 'destroyed views cannot start retries');
 const Logs = load('src/components/Logs.vue').default;
 const list = instance(Logs, { $root: { MomentJS: moment } });
 for (const failingType of [0, 1]) {
-  list.$root.EVNotify = { getLogs: (type, cb) => cb(type === failingType ? 'Offline' : null, []) };
+  list.$root.EVNotify = { version: 'V2', getLogs: (type, cb) => cb(type === failingType ? 'Offline' : null, []) };
   list.loadLogs();
   assert.strictEqual(list.loading, false);
   assert(list.loadError.includes('Offline'));
 }
 const running = { id: 'running', status: 'running', start: 1794700800, end: null };
 const finished = { id: 'finished', start: 1794690000, end: 1794690200 };
-list.$root.EVNotify = { getLogs: (type, cb) => cb(null, type ? [finished] : [running]) };
+const v2LogFilters = [];
+list.$root.EVNotify = { version: 'V2', getLogs: (type, cb) => {
+  v2LogFilters.push(type);
+  cb(null, type ? [finished] : [running]);
+} };
 list.loadLogs();
+assert.deepStrictEqual(v2LogFilters, [0, 1]);
 assert.strictEqual(list.loaded, true);
 assert.strictEqual(list.loadError, '');
 assert.strictEqual(Object.values(list.logs)[0][0].id, 'running');
@@ -193,6 +198,54 @@ assert(!Object.keys(list.logs).some(key => key.endsWith('_1970')));
 assert(list.convertSubHeader('10_2026').includes('November'));
 assert(list.convertDates(running.start, null, 'running').endsWith('Ongoing'));
 assert(list.setSubtitle({ start_soc: 0, end_soc: 20 }).startsWith('0%'));
+
+// V3 must include unknown logs, using one unfiltered request rather than two filtered lists.
+const v3List = instance(Logs, { $root: { MomentJS: moment } });
+const logTime = (month, day) => Date.UTC(2026, month, day, 12) / 1000;
+const unknownLog = { id: 'unknown-log', type: 'unknown', status: 'finished', start: logTime(10, 16), end: logTime(10, 16) + 60 };
+const v3LogRecords = [
+  { id: 'drive', type: 'drive', status: 'finished', start: logTime(10, 15), end: logTime(10, 15) + 60 },
+  unknownLog,
+  { id: 'charge', type: 'charge', charge: true, status: 'finished', start: logTime(10, 17), end: logTime(10, 17) + 60 },
+  { id: 'running-unknown', type: 'unknown', status: 'running', start: logTime(10, 14), end: null },
+  { id: 'october', type: 'drive', status: 'finished', start: logTime(9, 15), end: logTime(9, 15) + 60 }
+];
+const loadV3Logs = (err, records) => {
+  const filters = [];
+  v3List.$root.EVNotify = { version: 'V3', getLogs: (filter, cb) => {
+    filters.push(filter);
+    assert.strictEqual(v3List.loading, true);
+    cb(err, records);
+  } };
+  v3List.loadLogs();
+  assert.deepStrictEqual(filters, [null]);
+  assert.strictEqual(v3List.loading, false);
+};
+const listedV3Logs = () => Object.keys(v3List.logs).reduce((records, key) => records.concat(v3List.logs[key]), []);
+loadV3Logs(null, [unknownLog]);
+assert.strictEqual(v3List.loaded, true);
+assert.deepStrictEqual(listedV3Logs(), [unknownLog], 'an unknown-only account must not appear empty');
+loadV3Logs(null, v3LogRecords);
+assert.deepStrictEqual(v3List.logs['10_2026'].map(log => log.id), ['running-unknown', 'charge', 'unknown-log', 'drive']);
+assert.deepStrictEqual(v3List.logs['9_2026'].map(log => log.id), ['october']);
+assert.strictEqual(listedV3Logs().length, v3LogRecords.length);
+assert.strictEqual(new Set(listedV3Logs().map(log => log.id)).size, v3LogRecords.length);
+for (const response of [null, {}, 'invalid']) {
+  loadV3Logs(null, response);
+  assert.strictEqual(v3List.loaded, false);
+  assert(v3List.loadError.includes('Invalid response'));
+}
+loadV3Logs('Offline', null);
+assert.strictEqual(v3List.loaded, false);
+assert(v3List.loadError.includes('Offline'));
+loadV3Logs(null, [unknownLog]);
+assert.strictEqual(v3List.loaded, true);
+assert.strictEqual(v3List.loadError, '');
+assert.deepStrictEqual(listedV3Logs(), [unknownLog]);
+loadV3Logs(null, []);
+assert.strictEqual(v3List.loaded, true);
+assert.strictEqual(v3List.loadError, '');
+assert.deepStrictEqual(v3List.logs, {});
 
 const memory = { settings: { soc: 10, email: 'stale@example.com' }, user: { akey: 'ABC123', token: 'token' } };
 const storage = { getValue: (key, fallback) => memory[key] === undefined ? fallback : memory[key], setValue: (key, value) => (memory[key] = value) };
