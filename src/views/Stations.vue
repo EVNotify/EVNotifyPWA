@@ -17,6 +17,7 @@
           <v-btn :disabled="!mapReady || busy || locating || !point" color="primary" @click="search">Find stations</v-btn>
           <v-btn :disabled="!mapReady || busy || locating || !point" @click="nearest">Nearest station</v-btn>
           <v-btn :disabled="!mapReady || busy || locating || !start || !end" color="primary" @click="plan">Plan route</v-btn>
+          <p class="caption">Station search uses a straight corridor between the start and end points. Results may differ from the road route shown.</p>
           <p v-if="busy || locating">Loading…</p>
           <p v-else-if="searched && !error && !stations.length">No stations found.</p>
           <v-btn v-if="!mapReady" @click="initMap">Retry map</v-btn>

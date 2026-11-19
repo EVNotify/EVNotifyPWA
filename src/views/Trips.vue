@@ -20,8 +20,11 @@
 
           <v-divider class="my-3"></v-divider>
           <h3>My trips</h3>
+          <v-alert v-if="listError" type="error" :value="true">{{ listError }}
+            <v-btn flat :disabled="loading || busy" @click="retryLoad">Retry loading trips</v-btn>
+          </v-alert>
           <p v-if="loading">Loading trips…</p>
-          <p v-else-if="!trips.length">No trips yet.</p>
+          <p v-else-if="!listError && !trips.length">No trips yet.</p>
           <v-card v-for="trip in trips" :key="trip.code" class="my-3">
             <v-card-title>{{ trip.name || trip.code }}</v-card-title>
             <v-card-text>
@@ -53,6 +56,7 @@ export default {
     listRequestGeneration: 0,
     busy: false,
     error: '',
+    listError: '',
     trips: [],
     createdTrip: null,
     form: { name: '', startDate: '', endDate: '', type: 'chargeAndDrive', locationEnabled: false, accessibleAfterEnd: false },
@@ -70,13 +74,19 @@ export default {
   methods: {
     formatDate(value) { return value ? new Date(value).toLocaleString() : 'Unknown date'; },
     tripUrl(code) { return 'https://trip.evnotify.de/?code=' + encodeURIComponent(code); },
+    retryLoad() {
+      if (this.loading || this.busy) return;
+      this.load();
+    },
     load() {
       const generation = ++this.listRequestGeneration;
       this.loading = true;
+      this.listError = '';
       this.$root.EVNotify.getTrips((err, res) => {
         if (generation !== this.listRequestGeneration) return;
         this.loading = false;
-        if (err) { this.error = 'Could not load trips (' + err + ').'; return; }
+        if (err) { this.listError = 'Could not load trips (' + err + ').'; return; }
+        this.listError = '';
         const trips = res && Array.isArray(res.data) ? res.data.slice() : [];
         if (this.createdTrip && !trips.some(trip => trip.code === this.createdTrip.code)) trips.push(this.createdTrip);
         this.trips = trips.sort((a, b) => new Date(b.start) - new Date(a.start));
