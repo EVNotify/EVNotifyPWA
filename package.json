@@ -6,7 +6,7 @@
     "serve": "node scripts/vue-cli.js serve",
     "build": "node scripts/vue-cli.js build",
     "lint": "vue-cli-service lint",
-    "test": "node tests/vue-cli.test.js && node tests/evnotify-v3.test.js && node tests/trips.test.js && node tests/pwa-regressions.test.js && node tests/stations.test.js",
+    "test": "node tests/vue-cli.test.js && node tests/evnotify-v3.test.js && node tests/trips.test.js && node tests/pwa-regressions.test.js && node tests/settings-sessions.test.js && node tests/stations.test.js",
     "lint:check": "vue-cli-service lint --no-fix && eslint --no-fix scripts"
   },
   "dependencies": {

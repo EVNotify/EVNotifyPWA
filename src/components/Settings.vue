@@ -190,6 +190,11 @@
     import Storage from '../utils/storage';
     import v3Cars from '../utils/vehicles';
 
+    const captureSession = client => ({
+        client, generation: client._sessionGeneration, version: client.version,
+        baseUrl: client.baseUrl, akey: client.akey, token: client.token
+    });
+
     export default {
         computed: {
             v3Cars() { return v3Cars; },
@@ -211,6 +216,8 @@
             saving: false,
             settingsLoading: false,
             settingsError: '',
+            settingsSession: null,
+            disposed: false,
             settings: [{
                 title: 'Credentials',
                 icon: 'account_circle',
@@ -412,8 +419,20 @@
                 });
             },
             logout() {
+                this.disposed = true;
                 Storage.removeValue('user');
                 this.$router.push('/login');
+            },
+            checkSettingsSession(session) {
+                if (this.disposed) return false;
+                const client = this.$root.EVNotify;
+                if (session && client === session.client && client._sessionGeneration === session.generation &&
+                    client.version === session.version && client.baseUrl === session.baseUrl &&
+                    client.akey === session.akey && client.token === session.token) return true;
+                this.saving = false;
+                this.settingsLoading = false;
+                this.settingsError = 'Your session changed. Reload settings before saving again.';
+                return false;
             },
             retrieveSettings() {
                 const settings = {};
@@ -436,12 +455,17 @@
                 }));
             },
             loadSettings(callback) {
-                if (this.settingsLoading || this.saving) return;
+                if (this.disposed || this.settingsLoading || this.saving) return;
+                const session = captureSession(this.$root.EVNotify);
+                // Cached settings remain editable after an initial load failure in this session.
+                if (!this.settingsSession) this.settingsSession = session;
                 this.settingsLoading = true;
                 this.settingsError = '';
-                this.$root.EVNotify.getSettings((err, serverSettings) => {
+                session.client.getSettings((err, serverSettings) => {
+                    if (!this.checkSettingsSession(session)) return;
                     this.settingsLoading = false;
                     if (!err && serverSettings) {
+                        this.settingsSession = session;
                         this.localSettings = Storage.setValue('settings', serverSettings);
                     } else {
                         this.settingsError = 'Could not load settings (' + (err || 'Invalid response') + ').';
@@ -452,7 +476,9 @@
                 });
             },
             saveSettings() {
-                if (this.saving || this.settingsLoading) return;
+                if (this.disposed || this.saving || this.settingsLoading) return;
+                const session = this.settingsSession;
+                if (!this.checkSettingsSession(session)) return;
                 const settings = this.retrieveSettings();
                 if (this.isV3 && settings.capacity != null && (!Number.isFinite(settings.capacity) || settings.capacity <= 0)) {
                     this.settingsError = 'Enter a positive battery capacity or leave it empty.';
@@ -469,11 +495,14 @@
                     this.saving = false;
                     this.settingsError = 'Could not save and refresh settings (' + err + '). Your edits are still available.';
                 };
-                this.$root.EVNotify.getSettings((err, serverSettings) => {
+                session.client.getSettings((err, serverSettings) => {
+                    if (!this.checkSettingsSession(session)) return;
                     if (err || !serverSettings) return fail(err || 'Invalid response');
-                    this.$root.EVNotify.setSettings(Object.assign({}, serverSettings, settings), saveErr => {
+                    session.client.setSettings(Object.assign({}, serverSettings, settings), saveErr => {
+                        if (!this.checkSettingsSession(session)) return;
                         if (saveErr) return fail(saveErr);
-                        this.$root.EVNotify.getSettings((reloadErr, canonical) => {
+                        session.client.getSettings((reloadErr, canonical) => {
+                            if (!this.checkSettingsSession(session)) return;
                             if (reloadErr || !canonical) return fail(reloadErr || 'Invalid response');
                             this.saving = false;
                             this.localSettings = Storage.setValue('settings', canonical);
@@ -546,6 +575,7 @@
             EventBus.$on('saved', this.onSaved);
         },
         beforeDestroy() {
+            this.disposed = true;
             EventBus.$off('saved', this.onSaved);
             EventBus.$emit('unsave');
         }
