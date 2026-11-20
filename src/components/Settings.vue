@@ -146,7 +146,8 @@
                                 </v-text-field>
                                 <v-btn v-else-if="element.type === 'button'" :flat="!!element.flat" :block="!element.flat" large :color="element.color"
                                     :disabled="isV3 && element.action === 'showABRPDialog'"
-                                    @click="element.href ? '' : callDynamicFunction(element.action)" :href="element.href">{{ element.title }}
+                                    @click="element.href ? '' : callDynamicFunction(element.action)" :href="element.href"
+                                    :target="element.target" :rel="element.rel">{{ element.title }}
                                 </v-btn>
                                 <v-select v-else-if="element.type === 'select'" :items="element.id === 'car' && isV3 ? v3Cars : element.values"
                                     :disabled="saving || settingsLoading" :value="element.value" :label="element.title"
@@ -373,6 +374,13 @@
                 title: 'Support',
                 icon: 'card_giftcard',
                 elements: [{
+                    title: 'Donate via PayPal',
+                    type: 'button',
+                    href: 'https://paypal.me/GPlay97',
+                    target: '_blank',
+                    rel: 'noopener noreferrer',
+                    flat: true
+                }, {
                     title: 'Turn on ads',
                     type: 'switch',
                     value: Storage.getValue('showAds', false),
