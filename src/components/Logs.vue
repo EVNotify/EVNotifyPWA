@@ -75,7 +75,7 @@
                 return text;
             },
             setActionText(log) {
-                if (log.charge && log.average_kw != null) return `Ø ${log.average_kw} kW`;
+                if (log.charge && log.average_kw != null) return `Ø ${Math.abs(log.average_kw)} kW`;
                 if (!log.charge && log.distance != null) return `~ ${log.distance} km`;
                 return '';
             },

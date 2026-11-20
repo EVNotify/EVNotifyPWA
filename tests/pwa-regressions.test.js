@@ -70,6 +70,21 @@ assert.strictEqual(detail.distance, null);
 assert.strictEqual(detail.chargedEnergy, null);
 assert.strictEqual(detail.consumption, null);
 
+// Summary averages use the same magnitude as the history fallback and sparkline.
+for (const average of [-48, 48, 0]) {
+  detail.log = { average_kw: average, stats: [{ timestamp: 100, dc_battery_power: -48 }] };
+  assert.strictEqual(detail.avgKW, Math.abs(average));
+  assert.deepStrictEqual(detail.kWChartValues, [48]);
+  assert.strictEqual(detail.log.average_kw, average, 'display normalization must preserve signed source data');
+}
+for (const average of [undefined, null]) {
+  detail.log = { average_kw: average, stats: [{ timestamp: 100, dc_battery_power: -48 }] };
+  assert.strictEqual(detail.avgKW, 48);
+  assert.deepStrictEqual(detail.kWChartValues, [48]);
+  detail.log.stats = [];
+  assert.strictEqual(detail.avgKW, null);
+}
+
 // Summary totals take precedence, including zero; legacy counters remain a fallback.
 for (const total of [0, 5]) {
   detail.log = { recharged_kwh: total, discharged_kwh: total, start_cec: 10, end_cec: 22, start_ced: 20, end_ced: 40, distance: 100 };
@@ -219,6 +234,16 @@ assert(!Object.keys(list.logs).some(key => key.endsWith('_1970')));
 assert(list.convertSubHeader('10_2026').includes('November'));
 assert(list.convertDates(running.start, null, 'running').endsWith('Ongoing'));
 assert(list.setSubtitle({ start_soc: 0, end_soc: 20 }).startsWith('0%'));
+
+for (const average of [-48, 48, 0]) {
+  const log = { charge: true, average_kw: average };
+  assert.strictEqual(list.setActionText(log), `Ø ${Math.abs(average)} kW`);
+  assert.strictEqual(log.average_kw, average, 'list formatting must preserve signed source data');
+}
+for (const average of [undefined, null]) {
+  assert.strictEqual(list.setActionText({ charge: true, average_kw: average }), '');
+}
+assert.strictEqual(list.setActionText({ charge: false, average_kw: -48, distance: 100 }), '~ 100 km');
 
 // Running V3 summaries use current SOC and energy totals without fetching history.
 const runningCharge = { charge: true, status: 'running', start_soc: 40, current_soc: 60, recharged_kwh: 5 };

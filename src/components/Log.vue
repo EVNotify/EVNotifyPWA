@@ -297,7 +297,7 @@
                 return this.log.end_ced != null ? this.log.end_ced : this.getValueFromStats('cumulative_energy_discharged', 'end');
             },
             avgKW() {
-                if (this.log.average_kw != null) return this.log.average_kw;
+                if (this.log.average_kw != null) return Math.abs(this.log.average_kw);
                 const powers = (this.log.stats || []).map(stat => stat.dc_battery_power).filter(Number.isFinite);
                 return powers.length ? Math.abs(powers.reduce((a, b) => a + b, 0) / powers.length) : null;
             },
