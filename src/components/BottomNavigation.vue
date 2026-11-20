@@ -1,5 +1,6 @@
 <template>
-    <v-bottom-nav :value="true" fixed color="transparent" :style="{backgroundColor}">
+    <v-bottom-nav :value="true" fixed color="transparent" :style="{backgroundColor}"
+        class="evnotify-bottom-nav" :class="{'evnotify-bottom-nav--v3': isV3}">
         <v-btn flat :color="primaryColor" value="Dashboard" to="/">
             <span>Dashboard</span>
             <v-icon>dashboard</v-icon>
@@ -50,6 +51,30 @@ import Storage from '../utils/storage';
 </script>
 
 <style>
+
+@media (max-width: 399px) {
+    .v-item-group.v-bottom-nav.evnotify-bottom-nav--v3 > .v-btn,
+    .v-item-group.v-bottom-nav.evnotify-bottom-nav--v3 > .v-menu {
+        flex: 1 1 20%;
+        min-width: 0;
+        max-width: none;
+        width: auto;
+    }
+
+    .v-item-group.v-bottom-nav.evnotify-bottom-nav--v3 .v-btn {
+        min-width: 0;
+        padding-left: 2px;
+        padding-right: 2px;
+    }
+
+    .v-item-group.v-bottom-nav.evnotify-bottom-nav--v3 .v-menu__activator {
+        height: 100%;
+    }
+
+    .v-item-group.v-bottom-nav.evnotify-bottom-nav--v3 .v-btn__content {
+        font-size: 12px;
+    }
+}
 
 /* iPhone XR Portrait*/
 @media only screen
