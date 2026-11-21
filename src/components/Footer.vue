@@ -5,7 +5,7 @@
                 {{ link.name }}
             </v-btn>
             <v-flex primary lighten-2 py-3 text-xs-center white--text xs12>
-                &copy;2019 - <strong>EVNotify</strong>
+                &copy;2019 - 2026 <strong>EVNotify</strong>
             </v-flex>
         </v-layout>
     </v-footer>
@@ -16,7 +16,7 @@
         data: () => ({
             links: [{
                 name: 'Status',
-                href: 'https://status.evnotify.de'
+                href: 'https://info.evnotify.de'
             }, {
                 name: 'GitHub',
                 href: 'https://github.com/EVNotify/'

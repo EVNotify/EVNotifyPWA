@@ -10,11 +10,12 @@ import './registerServiceWorker';
 Vue.config.productionTip = false;
 
 const user = storage.getValue('user', {});
+const apiVersion = user.apiVersion || 'V2';
 
 new Vue({
   router,
   data: () => ({
-    EVNotify: new EVNotify(user.akey, user.token),
+    EVNotify: new EVNotify(user.akey, user.token, apiVersion),
     MomentJS: MomentJS 
   }),
   render: h => h(App)

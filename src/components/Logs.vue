@@ -2,6 +2,9 @@
     <v-layout justify-center>
         <v-flex xs12 sm12 md6>
             <v-card>
+                <v-alert v-if="loadError" type="error" :value="true">{{ loadError }}
+                    <v-btn flat :disabled="loading" @click="loadLogs">Retry</v-btn>
+                </v-alert>
                 <v-list three-line subheader v-if="loaded && Object.keys(logs).length">
                     <div v-for="(month, index) in logs" :key="index">
                         <v-subheader inset>{{ convertSubHeader(index) }}</v-subheader>
@@ -12,7 +15,7 @@
                             <v-list-tile-content>
                                 <v-list-tile-title>{{ log.title }}</v-list-tile-title>
                                 <v-list-tile-sub-title>{{ setSubtitle(log) }}</v-list-tile-sub-title>
-                                <v-list-tile-sub-title>{{ convertDates(log.start, log.end) }}</v-list-tile-sub-title>
+                                <v-list-tile-sub-title>{{ convertDates(log.start, log.end, log.status) }}</v-list-tile-sub-title>
                             </v-list-tile-content>
                             <v-list-tile-action>
                                 <v-list-tile-action-text>{{ setActionText(log) }}</v-list-tile-action-text>
@@ -24,7 +27,7 @@
                         <v-divider inset></v-divider>
                     </div>
                 </v-list>
-                <div v-else>
+                <div v-else-if="!loadError">
                     <v-img :src="listImg" class="empty-state-img"></v-img>
                     <p class="headline text-xs-center" v-if="!loaded">Loading logs. Please wait...</p>
                     <div v-else>
@@ -38,83 +41,84 @@
 </template>
 
 <script>
+    import logUtils from '../utils/log';
+
     export default {
-        data: () => ({
-            logs: {},
-            loaded: false
-        }),
+        data: () => ({ logs: {}, loaded: false, loading: false, loadError: '' }),
         computed: {
-            listImg() {
-                return require('../assets/list.png');
-            }
+            listImg() { return require('../assets/list.png'); }
         },
         methods: {
             convertSubHeader(date) {
-                return this.$root.MomentJS(date.split('_').reverse()).format('MMMM YYYY');
+                if (date === 'unknown') return 'Date unavailable';
+                const [month, year] = date.split('_').map(Number);
+                return this.$root.MomentJS([year, month]).format('MMMM YYYY');
             },
-            convertIcon(charge) {
-                return charge ? 'ev_station' : 'directions_car';
-            },
-            convertDates(start, end) {
-                start = new Date(start * 1000);
-                end = new Date(end * 1000);
-
-                return `${this.$root.MomentJS(end).format('MMMM Do YYYY')} ${this.$root.MomentJS(start).format('HH:mm')}-${this.$root.MomentJS(end).format('HH:mm')}`
+            convertIcon(charge) { return charge ? 'ev_station' : 'directions_car'; },
+            convertDates(start, end, status) {
+                return logUtils.dates({ start, end, status }, this.$root.MomentJS);
             },
             setSubtitle(log) {
                 let text = '';
-
-                if (log.start_soc && log.end_soc) {
-                    text = `${log.start_soc}% -> ${log.end_soc}%`;
-                }
-
-                if (!log.charge && log.distance && log.start_cec && log.end_cec && log.start_ced && log.end_ced) {
-                    const consumption = ((((log.end_ced - log.start_ced) - (log.end_cec - log.start_cec)) || 0) / log.distance * 100).toFixed(1);
-
+                const endSOC = logUtils.running(log) && log.current_soc != null ? log.current_soc : log.end_soc;
+                if (log.start_soc != null && endSOC != null) text = `${log.start_soc}% -> ${endSOC}%`;
+                const chargedEnergy = Number.isFinite(log.recharged_kwh) ? log.recharged_kwh :
+                    [log.start_cec, log.end_cec].every(Number.isFinite) ? log.end_cec - log.start_cec : null;
+                const dischargedEnergy = Number.isFinite(log.discharged_kwh) ? log.discharged_kwh :
+                    [log.start_ced, log.end_ced].every(Number.isFinite) ? log.end_ced - log.start_ced : null;
+                if (!log.charge && log.distance > 0 && [chargedEnergy, dischargedEnergy].every(Number.isFinite)) {
+                    const consumption = ((dischargedEnergy - chargedEnergy) / log.distance * 100).toFixed(1);
                     text += ` (Ø ${consumption} kWh/100km)`;
-                } else if (log.charge && log.start_cec && log.end_cec) {
-                    const charged = (log.end_cec - log.start_cec || 0).toFixed(1);
-
-                    text += ` (${charged} kWh)`;
+                } else if (log.charge && Number.isFinite(chargedEnergy)) {
+                    text += ` (${chargedEnergy.toFixed(1)} kWh)`;
                 }
-                
                 return text;
             },
             setActionText(log) {
-                if (log.charge && log.average_kw) {
-                    return `Ø ${log.average_kw} kW`;
-                } else if (!log.charge && log.distance) {
-                    return `~ ${log.distance} km`;
-                }
-
+                if (log.charge && log.average_kw != null) return `Ø ${Math.abs(log.average_kw)} kW`;
+                if (!log.charge && log.distance != null) return `~ ${log.distance} km`;
                 return '';
+            },
+            loadLogs() {
+                if (this.loading) return;
+                this.loading = true;
+                this.loaded = false;
+                this.loadError = '';
+                const fail = err => {
+                    this.loading = false;
+                    this.loadError = 'Could not load logs (' + err + ').';
+                };
+                const finish = (err, records) => {
+                    if (err || !Array.isArray(records)) return fail(err || 'Invalid response');
+                    const combined = records.slice().sort((a, b) =>
+                        Number(logUtils.running(b)) - Number(logUtils.running(a)) || logUtils.date(b) - logUtils.date(a));
+                    const logs = {};
+                    combined.forEach(log => {
+                        const time = logUtils.date(log);
+                        const date = time ? new Date(time * 1000) : null;
+                        const key = date ? `${date.getMonth()}_${date.getFullYear()}` : 'unknown';
+                        if (!logs[key]) logs[key] = [];
+                        logs[key].push(log);
+                    });
+                    this.logs = logs;
+                    this.loaded = true;
+                    this.loading = false;
+                };
+                const client = this.$root.EVNotify;
+                if (client.version === 'V3') {
+                    client.getLogs(null, finish);
+                    return;
+                }
+                client.getLogs(0, (err, drives) => {
+                    if (err || !Array.isArray(drives)) return fail(err || 'Invalid response');
+                    client.getLogs(1, (chargeErr, charges) => {
+                        if (chargeErr || !Array.isArray(charges)) return fail(chargeErr || 'Invalid response');
+                        finish(null, charges.concat(drives));
+                    });
+                });
             }
         },
-        mounted() {
-            var self = this;
-
-            self.$root.EVNotify.getLogs(0, (err, driveLogs) => {
-                if (!err && driveLogs) {
-                    self.$root.EVNotify.getLogs(1, (err, chargeLogs) => {
-                        if (!err && chargeLogs) {
-                            const combinedLogs = chargeLogs.concat(driveLogs)
-                                .sort((a, b) => b.end - a.end);
-                            const logs = {};
-
-                            combinedLogs.forEach((log) => {
-                                const date = new Date(log.end * 1000);
-                                const index = `${date.getMonth()}_${date.getFullYear()}`;
-
-                                if (!logs[index]) logs[index] = [];
-                                logs[index].push(log);
-                            });
-                            self.loaded = true;
-                            self.logs = logs;
-                        }
-                    });
-                }
-            });
-        }
+        mounted() { this.loadLogs(); }
     }
 </script>
 

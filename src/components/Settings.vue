@@ -69,7 +69,7 @@
             <v-card>
                 <v-card-title class="headline">Telegram integration</v-card-title>
                 <v-card-text v-if="localSettings.telegram">
-                    You have linked your account with <a href="https://t.me/evnotify2bot">Telegram</a>.
+                    You have linked your account with <a :href="telegramBotUrl">Telegram</a>.
                     In order to remove the integration, simply enter <b><i>/unsubscribe</i></b> within bot.
                 </v-card-text>
                 <v-card-text v-else>
@@ -78,7 +78,7 @@
                     Enter the token (<b>{{ token }}</b>) - never share it with people you do not trust.
                     You can copy the token and write it to the bot after typing <b><i>/subscribe</i></b>.
                     Just as well, you can also unsubscribe with <b><i>/unsubscribe</i></b> with telegram.
-                    Open the bot <a href="https://t.me/evnotify2bot">here</a>.
+                    Open the bot <a :href="telegramBotUrl">here</a>.
                 </v-card-text>
                 <v-card-actions>
                     <v-spacer></v-spacer>
@@ -118,7 +118,11 @@
             </v-card>
         </v-dialog>
         <v-flex xs12 sm12 md6>
-            <v-form>
+                <v-form>
+                    <v-alert v-if="settingsError" type="error" :value="true">{{ settingsError }}
+                        <v-btn flat :disabled="saving || settingsLoading" @click="loadSettings()">Reload settings</v-btn>
+                    </v-alert>
+                    <v-alert v-if="isV3" type="info" :value="true">Push notifications and ABRP are unavailable with V3.</v-alert>
                 <v-list>
                     <v-list-group v-for="setting in settings" :key="setting.title" v-model="setting.active"
                         :prepend-icon="setting.icon" no-action>
@@ -129,33 +133,43 @@
                                 </v-list-tile-content>
                             </v-list-tile>
                         </template>
-                        <v-list-tile v-for="element in setting.elements" :key="element.title">
+                        <v-list-tile v-for="element in setting.elements" :key="element.title" v-show="!element.v3Only || isV3">
                             <v-list-tile-content>
                                 <v-list-tile-title v-if="element.type === 'text'">{{ element.title }}
                                 </v-list-tile-title>
                                 <v-text-field v-else-if="element.type === 'password'"
                                     :prepend-icon="element.showPassword ? 'visibility_off' : 'visibility'"
                                     :label="element.title" :type="element.showPassword ? 'text' : 'password'" readonly
-                                    :hint="element.hint" :persistent-hint="true" :value="element.value"
+                                    :hint="element.hint" :persistent-hint="true" :disabled="saving || settingsLoading" :value="element.value"
                                     @click:prepend="element.showPassword = !element.showPassword"
                                     @change="showSaveIcon()">
                                 </v-text-field>
                                 <v-btn v-else-if="element.type === 'button'" :flat="!!element.flat" :block="!element.flat" large :color="element.color"
-                                    @click="element.href ? '' : callDynamicFunction(element.action)" :href="element.href">{{ element.title }}
+                                    :disabled="isV3 && element.action === 'showABRPDialog'"
+                                    @click="element.href ? '' : callDynamicFunction(element.action)" :href="element.href"
+                                    :target="element.target" :rel="element.rel">{{ element.title }}
                                 </v-btn>
-                                <v-select v-else-if="element.type === 'select'" :items="element.values"
-                                    :value="element.value" :label="element.title"
+                                <v-select v-else-if="element.type === 'select'" :items="element.id === 'car' && isV3 ? v3Cars : element.values"
+                                    :disabled="saving || settingsLoading" :value="element.value" :label="element.title"
                                     @change="element.value = $event; showSaveIcon()">
                                 </v-select>
+                                <v-text-field v-else-if="isV3 && element.id === 'consumption'" :label="element.title"
+                                    type="number" min="0" step="any" :disabled="saving || settingsLoading" :value="element.value"
+                                    :hint="consumptionHint" persistent-hint
+                                    @input="element.value = $event; showSaveIcon()"></v-text-field>
                                 <v-slider v-else-if="element.type === 'slider'" thumb-label="always" :min="element.min"
                                     persistent-hint :hint="element.hint" :label="element.title" :max="element.max"
-                                    :value="element.value" :step="element.step"
+                                    :disabled="saving || settingsLoading" :value="element.value" :step="element.step"
                                     @input="element.value = $event; showSaveIcon()">
                                 </v-slider>
                                 <v-text-field v-else-if="element.type === 'textfield'" :label="element.title"
-                                    @input="element.value = $event; showSaveIcon()" :value="element.value">
+                                    @input="element.value = $event; showSaveIcon()" :disabled="saving || settingsLoading" :value="element.value">
                                 </v-text-field>
+                                <v-text-field v-else-if="element.type === 'number'" :label="element.title"
+                                    type="number" min="0" step="0.1" :disabled="saving || settingsLoading" :value="element.value" :hint="element.hint" persistent-hint
+                                    @input="element.value = $event; showSaveIcon()"></v-text-field>
                                 <v-switch v-else-if="element.type === 'switch'" :label="element.title"
+                                    :disabled="saving || settingsLoading || (isV3 && element.id === 'push')"
                                     @change="element.value = $event; showSaveIcon(); callDynamicFunction(element.action, $event)" :value="element.value"
                                     :input-value="element.value"
                                     :hint="element.hint" :persistent-hint="true">
@@ -175,14 +189,40 @@
         EventBus
     } from '../utils/event';
     import Storage from '../utils/storage';
+    import v3Cars from '../utils/vehicles';
+
+    const captureSession = client => ({
+        client, generation: client._sessionGeneration, version: client.version,
+        baseUrl: client.baseUrl, akey: client.akey, token: client.token
+    });
+
+    const matchesSession = (left, right) => left && right && left.client === right.client &&
+        left.generation === right.generation && left.version === right.version &&
+        left.baseUrl === right.baseUrl && left.akey === right.akey && left.token === right.token;
 
     export default {
         computed: {
+            v3Cars() { return v3Cars; },
+            consumptionHint() {
+                const unit = this.localSettings.consumptionUnit || 'kWh';
+                return unit === 'kWh' ? 'kWh/100km' : unit;
+            },
+            isV3() {
+                return this.$root.EVNotify.version === 'V3';
+            },
+            telegramBotUrl() {
+                return this.isV3 ? 'https://t.me/EVNotify3Bot' : 'https://t.me/evnotify2bot';
+            },
             primaryColor() {
                 return (Storage.getValue('darkMode') ? 'primary darken-1' : 'primary');
             },
         },
         data: () => ({
+            saving: false,
+            settingsLoading: false,
+            settingsError: '',
+            settingsSession: null,
+            disposed: false,
             settings: [{
                 title: 'Credentials',
                 icon: 'account_circle',
@@ -257,6 +297,13 @@
                         value: 'ID_3'
                     }]
                 }, {
+                    id: 'capacity',
+                    value: '',
+                    title: 'Battery capacity (kWh)',
+                    type: 'number',
+                    v3Only: true,
+                    hint: 'Optional usable capacity. Required for estimates when no model default exists.'
+                }, {
                     id: 'consumption',
                     value: '',
                     title: 'Consumption',
@@ -327,6 +374,13 @@
                 title: 'Support',
                 icon: 'card_giftcard',
                 elements: [{
+                    title: 'Donate via PayPal',
+                    type: 'button',
+                    href: 'https://paypal.me/GPlay97',
+                    target: '_blank',
+                    rel: 'noopener noreferrer',
+                    flat: true
+                }, {
                     title: 'Turn on ads',
                     type: 'switch',
                     value: Storage.getValue('showAds', false),
@@ -377,65 +431,94 @@
                 });
             },
             logout() {
+                this.disposed = true;
                 Storage.removeValue('user');
                 this.$router.push('/login');
+            },
+            checkSettingsSession(session) {
+                if (this.disposed) return false;
+                if (matchesSession(session, captureSession(this.$root.EVNotify))) return true;
+                this.saving = false;
+                this.settingsLoading = false;
+                this.settingsError = 'Your session changed. Reload settings before saving again.';
+                return false;
             },
             retrieveSettings() {
                 const settings = {};
 
                 this.settings.forEach((setting) => {
-                    setting.elements.filter((element) => element.id).map((element) => ({
+                    setting.elements.filter((element) => element.id && (!element.v3Only || this.isV3)).map((element) => ({
                         key: element.id,
                         value: element.value
                     })).forEach((obj) => settings[obj.key] = obj.value);
                 });
+                if (this.isV3) {
+                    settings.capacity = settings.capacity === '' || settings.capacity == null ? null : Number(settings.capacity);
+                    if (settings.consumption !== '' && settings.consumption != null) settings.consumption = Number(settings.consumption);
+                }
                 return settings;
             },
+            displaySettings(settings) {
+                this.settings.forEach(group => group.elements.forEach(element => {
+                    if (element.id) element.value = settings[element.id] != null ? settings[element.id] : '';
+                }));
+            },
             loadSettings(callback) {
-                const self = this;
-                const localSettings = Storage.getValue('settings', {});
-
-                const displaySettings = (settings) => {
-                    Object.keys(settings).forEach((key) => {
-                        this.settings.forEach((setting) => {
-                            const current = setting.elements.filter((element) => element.id === key)[0];
-
-                            if (current) current.value = localSettings[key];
-                        });
-                    });
-                };
-
-                self.$root.EVNotify.getSettings((err, serverSettings) => {
+                if (this.disposed || this.settingsLoading || this.saving) return;
+                const session = captureSession(this.$root.EVNotify);
+                // Cached settings remain editable after an initial load failure in this session.
+                if (!this.settingsSession) this.settingsSession = session;
+                this.settingsLoading = true;
+                this.settingsError = '';
+                session.client.getSettings((err, serverSettings) => {
+                    if (!this.checkSettingsSession(session)) return;
+                    this.settingsLoading = false;
                     if (!err && serverSettings) {
-                        displaySettings((self.localSettings = Storage.setValue('settings', serverSettings)));
+                        this.settingsSession = session;
+                        this.localSettings = Storage.setValue('settings', serverSettings);
                     } else {
-                        displaySettings((self.localSettings = Storage.getValue('settings', {})));
+                        this.settingsError = 'Could not load settings (' + (err || 'Invalid response') + ').';
+                        this.localSettings = Storage.getValue('settings', {});
                     }
+                    this.displaySettings(this.localSettings);
                     if (typeof callback === 'function') callback(err, serverSettings);
                 });
             },
             saveSettings() {
-                const self = this;
-                const settings = self.retrieveSettings();
-
-                self.$root.EVNotify.getSettings((err, serverSettings) => {
-                    if (!err && serverSettings) {
-                        Object.keys(settings).forEach((setting) => {
-                            serverSettings[setting] = settings[setting];
+                if (this.disposed || this.saving || this.settingsLoading) return;
+                const session = this.settingsSession;
+                if (!this.checkSettingsSession(session)) return;
+                const settings = this.retrieveSettings();
+                if (this.isV3 && settings.capacity != null && (!Number.isFinite(settings.capacity) || settings.capacity <= 0)) {
+                    this.settingsError = 'Enter a positive battery capacity or leave it empty.';
+                    return;
+                }
+                if (this.isV3 && settings.consumption !== '' && settings.consumption != null &&
+                    (!Number.isFinite(settings.consumption) || settings.consumption <= 0)) {
+                    this.settingsError = 'Enter a positive consumption or leave it empty.';
+                    return;
+                }
+                this.saving = true;
+                this.settingsError = '';
+                const fail = err => {
+                    this.saving = false;
+                    this.settingsError = 'Could not save and refresh settings (' + err + '). Your edits are still available.';
+                };
+                session.client.getSettings((err, serverSettings) => {
+                    if (!this.checkSettingsSession(session)) return;
+                    if (err || !serverSettings) return fail(err || 'Invalid response');
+                    session.client.setSettings(Object.assign({}, serverSettings, settings), saveErr => {
+                        if (!this.checkSettingsSession(session)) return;
+                        if (saveErr) return fail(saveErr);
+                        session.client.getSettings((reloadErr, canonical) => {
+                            if (!this.checkSettingsSession(session)) return;
+                            if (reloadErr || !canonical) return fail(reloadErr || 'Invalid response');
+                            this.saving = false;
+                            this.localSettings = Storage.setValue('settings', canonical);
+                            this.displaySettings(canonical);
+                            EventBus.$emit('unsave');
                         });
-                        self.$root.EVNotify.setSettings(serverSettings, (err) => {
-                            if (!err) {
-                                this.localSettings = serverSettings;
-                                Storage.setValue('settings', serverSettings);
-                                EventBus.$emit('unsave');
-                                // TODO
-                            } else {
-                                // TODO
-                            }
-                        });
-                    } else {
-                        // TODO
-                    }
+                    });
                 });
             },
             changePassword() {
@@ -449,7 +532,6 @@
                 }
 
                 self.$root.EVNotify.changePW(self.password, self.newPassword, (err) => {
-                    console.log(err);
                     self.password = self.newPassword = self.newPassword2 = '';
                     self.changePasswordDialog = false;
                     self.showSnackbar = true;
@@ -467,11 +549,16 @@
 
                 if (self.password.length < 6) return self.errorMessage = 'Password must be at least 6 characters.';
 
-                self.$root.EVNotify.renewToken(self.password, (err, token) => {
+                const session = captureSession(self.$root.EVNotify);
+                session.client.renewToken(self.password, (err, token) => {
+                    const renewed = Object.assign({}, session, { token: err ? session.token : token });
+                    if (!self.checkSettingsSession(renewed)) return;
                     self.password = '';
                     self.resetTokenDialog = false;
                     self.showSnackbar = true;
                     if (!err && token) {
+                        // Only this form's own token rotation may preserve its pending edits.
+                        if (matchesSession(self.settingsSession, session)) self.settingsSession = renewed;
                         const user = Storage.getValue('user', {});
 
                         user.token = token;
@@ -498,9 +585,12 @@
         },
         mounted() {
             this.loadSettings();
-            EventBus.$on('saved', () => this.saveSettings());
+            this.onSaved = () => this.saveSettings();
+            EventBus.$on('saved', this.onSaved);
         },
         beforeDestroy() {
+            this.disposed = true;
+            EventBus.$off('saved', this.onSaved);
             EventBus.$emit('unsave');
         }
     }

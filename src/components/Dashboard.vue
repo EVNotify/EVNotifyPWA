@@ -15,14 +15,17 @@
     </v-dialog>
     <v-flex xs12 sm12 md6>
       <v-card class="main-card" v-show="!showMap">
+        <v-alert v-if="isV3" class="mx-3 mt-3" type="warning" :value="true">
+          Experimental V3 API integration. It may still contain errors.
+        </v-alert>
         <v-card-title primary-title>
           <v-layout class="upper-part">
             <v-flex xs5>
               <div class="progress-cycle-container left">
                 <v-progress-circular :rotate="-90" :size="100" :width="15"
-                  :value="syncData.soc_display || syncData.soc_bms" :color="cycleColor">
+                  :value="displaySOC" :color="cycleColor">
                   <div class="progress-cycle-text-container">
-                    <p>{{ syncData.soc_display || syncData.soc_bms }} %</p>
+                    <p>{{ displaySOC == null ? '–' : displaySOC }} %</p>
                   </div>
                   <div v-if="syncData.charging" class="centerchargeicon">
                     <v-icon :color="primaryColor">flash_on</v-icon>
@@ -42,15 +45,15 @@
                     </v-list-tile-action>
                     <v-list-tile-content>
                       <v-list-tile-title :style="{color: powerAmountColor}">{{ powerAmount }} kW</v-list-tile-title>
-                      <span v-if="syncData.charging" class="font-weight-light font-italic caption">{{ rangePerMinute }} km / min</span>
+                      <span v-if="syncData.charging && totalRange != null" class="font-weight-light font-italic caption">{{ rangePerMinute }} km / min</span>
                     </v-list-tile-content>
                   </v-list-tile>
-                  <v-list-tile v-if="isSupportedCar()">
+                  <v-list-tile v-if="totalRange != null">
                     <v-list-tile-action>
                       <v-icon :color="primaryColor">drive_eta</v-icon>
                     </v-list-tile-action>
                     <v-list-tile-content>
-                      <v-list-tile-title :style="{color: currentRangeColor}">{{ currentRange }} / {{ totalRange }} km</v-list-tile-title>
+                      <v-list-tile-title :style="{color: currentRangeColor}">{{ currentRange == null ? '–' : currentRange }} / {{ totalRange == null ? '–' : totalRange }} km</v-list-tile-title>
                       <span class="font-weight-light font-italic caption">{{ settings.consumption || 0 }} kWh / 100 km</span>
                     </v-list-tile-content>
                   </v-list-tile>
@@ -67,6 +70,7 @@
               </div>
             </v-flex>
           </v-layout>
+          <p v-if="isV3 && !batteryCapacity" class="caption">Set battery capacity in Settings to enable vehicle estimates.</p>
           <small class="updated-timestamp" v-if="!dataOutdated()">{{ updatedTimestamp }}</small>
           <v-alert class="mt-2" type="warning" :value="dataOutdated()" transition="scale-transition">
             {{ dataOutdatedMessage }}<br>
@@ -195,7 +199,7 @@
                   </v-list-tile-avatar>
                   <v-list-tile-content>
                     <v-list-tile-title>{{ log.title }}</v-list-tile-title>
-                    <v-list-tile-sub-title>{{ convertDates(log.start, log.end) }}</v-list-tile-sub-title>
+                    <v-list-tile-sub-title>{{ convertDates(log.start, log.end, log.status) }}</v-list-tile-sub-title>
                   </v-list-tile-content>
                   <v-list-tile-action>
                     <v-btn icon ripple @click="$router.push({name: 'log', query: {id: log.id}})">
@@ -211,7 +215,7 @@
             <v-divider v-if="syncData.last_location" class="mt-1 mb-3"></v-divider>
             <v-list two-line subheader v-if="syncData.last_location">
               <v-subheader>Last location</v-subheader>
-              <p class="caption last-location-timestamp">Last updated: {{ lastLocationTimestamp }}</p>
+              <p v-if="!isV3" class="caption last-location-timestamp">Last updated: {{ lastLocationTimestamp }}</p>
                 <v-list-tile avatar @click="showMap = true" :class="{'last-tile': syncData.last_location}">
                   <v-list-tile-avatar>
                     <v-icon :class="iconColor">map</v-icon>
@@ -238,15 +242,15 @@
 
 <script>
   import storage from '../utils/storage';
-  import cars from '../utils/cars';
+  import logUtils from '../utils/log';
   import general from '../utils/general';
 
   export default {
     data: () => ({
       syncData: {
         odo: 0,
-        soc_bms: 0,
-        soc_display: 0,
+        soc_bms: null,
+        soc_display: null,
         dc_battery_power: 0,
         battery_min_temperature: 0,
         battery_max_temperature: 0,
@@ -278,6 +282,13 @@
       log: {}
     }),
     computed: {
+      displaySOC() { return this.syncData.soc_display != null ? this.syncData.soc_display : this.syncData.soc_bms; },
+      batteryCapacity() { return general.capacity(this.settings.car, this.isV3 ? this.settings.capacity : null); },
+      isV3() {
+        const user = storage.getValue('user', {});
+        return (this.$root && this.$root.EVNotify && this.$root.EVNotify.version === 'V3') ||
+          (user && user.apiVersion === 'V3');
+      },
       primaryColor() {
             return (storage.getValue('darkMode') ? 'primary darken-1' : 'primary');
       },
@@ -291,7 +302,7 @@
         return `https://robohash.org/${this.randomRobot.id}`;
       },
       cycleColor() {
-        const soc = this.syncData.soc_display || this.syncData.soc_bms;
+        const soc = this.displaySOC;
 
         if (soc < 15) return 'red';
         else if (soc < 30) return 'orange';
@@ -306,16 +317,14 @@
         return parseFloat(this.syncData.dc_battery_power) <= 0 ? '#009688' : 'red';
       },
       chargingTimeLeft() {
-        return general.chargeTime(this.settings.car, this.syncData.soc_display, this.syncData.soc_bms, this.syncData.dc_battery_power, "timeleft");
+        return general.chargeTime(this.settings.car, this.syncData.soc_display, this.syncData.soc_bms, this.syncData.dc_battery_power, "timeleft", this.batteryCapacity);
       },
       finishTime() {
-        return general.chargeTime(this.settings.car, this.syncData.soc_display, this.syncData.soc_bms, this.syncData.dc_battery_power, "finishtime");
+        return general.chargeTime(this.settings.car, this.syncData.soc_display, this.syncData.soc_bms, this.syncData.dc_battery_power, "finishtime", this.batteryCapacity);
       },
       currentRange() {
-        const soc = this.syncData.soc_display || this.syncData.soc_bms;
-
-        return parseInt(this.totalRange * ((soc === 100) ? 1 : '0.' + ((soc < 10) ? ('0' + parseInt(soc)) :
-          parseInt(soc)))) || 0;
+        const soc = this.syncData.soc_display != null ? this.syncData.soc_display : this.syncData.soc_bms;
+        return this.totalRange != null && Number.isFinite(soc) ? Math.floor(this.totalRange * soc / 100) : null;
       },
       currentRangeColor() {
         if (this.currentRange < (this.totalRange * 10 / 100)) {
@@ -329,11 +338,12 @@
         }
       },
       totalRange() {
-        return parseInt((cars[this.settings.car].CAPACITY / this.settings.consumption) * 100) || 0;
+        if (this.isV3 && this.settings.consumptionUnit && this.settings.consumptionUnit !== 'kWh') return null;
+        return general.range(this.settings.car, this.settings.consumption, this.batteryCapacity);
       },
       rangePerMinute() {
-        const time = general.chargeDecimalTime(this.settings.car, this.syncData.soc_display, this.syncData.soc_bms, this.syncData.dc_battery_power);
-        return (parseFloat((this.totalRange - this.currentRange) / (60 / 100 * time * 100)) || 0).toFixed(2);
+        const hours = general.chargeDecimalTime(this.settings.car, this.syncData.soc_display, this.syncData.soc_bms, this.syncData.dc_battery_power, this.batteryCapacity);
+        return hours > 0 && this.totalRange != null && this.currentRange != null ? ((this.totalRange - this.currentRange) / (hours * 60)).toFixed(2) : '–';
       },
       lastLocationTimestamp() {
         return this.$root.MomentJS(this.syncData.last_location * 1000).format('MMMM Do YYYY HH:mm');
@@ -391,16 +401,13 @@
         return !lastUpdate || lastUpdate + 600 < now;
       },
       isSupportedCar() {
-        return cars[this.settings.car] != null;
+        return this.batteryCapacity > 0;
       },
       convertIcon(charge) {
         return charge ? 'ev_station' : 'directions_car';
       },
-      convertDates(start, end) {
-        start = new Date(start * 1000);
-        end = new Date(end * 1000);
-
-        return `${this.$root.MomentJS(end).format('MMMM Do YYYY')} ${this.$root.MomentJS(start).format('HH:mm')}-${this.$root.MomentJS(end).format('HH:mm')}`
+      convertDates(start, end, status) {
+        return logUtils.dates({ start, end, status }, this.$root.MomentJS);
       },
       showLastPosition() {
         const markerLocation = {
@@ -416,7 +423,7 @@
         });
         // eslint-disable-next-line
         const infoWindow = new google.maps.InfoWindow({
-          content: `Last location from ${this.lastLocationTimestamp}`
+          content: this.isV3 ? 'Last known location' : `Last location from ${this.lastLocationTimestamp}`
         });
         // eslint-disable-next-line
         const marker = new google.maps.Marker({

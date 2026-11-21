@@ -1,6 +1,7 @@
 <template>
     <v-layout>
-        <Robots />
+        <v-alert v-if="isV3" type="info" :value="true">Robots are unavailable with V3.</v-alert>
+        <Robots v-else />
         <BottomNavigation />
     </v-layout>
 </template>
@@ -10,7 +11,10 @@
     import Robots from '../components/Robots';
     import Storage from '../utils/storage';
 
-    export default {
+  export default {
+    computed: {
+      isV3() { return this.$root.EVNotify.version === 'V3'; }
+    },
         data: () => ({
             loggedIn: false
         }),

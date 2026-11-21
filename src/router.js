@@ -36,10 +36,25 @@ export default new Router({
       name: 'catlender',
       component: () => import(/* webpackChunkName: "catlender" */ './views/Catlender.vue')
     },
-    {
-      path: '/settings',
-      name: 'settings',
-      component: () => import(/* webpackChunkName: "settings" */ './views/Settings.vue')
-    }
+ {
+ path: '/settings',
+ name: 'settings',
+ component: () => import(/* webpackChunkName: "settings" */ './views/Settings.vue')
+ },
+ {
+ path: '/premium',
+ name: 'premium',
+ component: () => import(/* webpackChunkName: "premium" */ './views/Premium.vue')
+ },
+ {
+ path: '/trips',
+ name: 'trips',
+ component: () => import(/* webpackChunkName: "trips" */ './views/Trips.vue')
+ },
+ {
+ path: '/stations',
+ name: 'stations',
+ component: () => import(/* webpackChunkName: "stations" */ './views/Stations.vue')
+ }
   ]
 });
